@@ -3,15 +3,6 @@ import jwt from 'jsonwebtoken'
 import connectDB from './mongodb'
 import User from '@/models/User'
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required')
-}
-
-// TypeScript assertion: JWT_SECRET is guaranteed to be string after the check above
-const JWT_SECRET_SAFE = JWT_SECRET as string
-
 export interface AuthUser {
   userId: string
   email: string
@@ -46,13 +37,20 @@ export function getTokenFromRequest(request: NextRequest): string | null {
 
 export async function verifyAuth(request: NextRequest): Promise<AuthUser | null> {
   try {
+    const JWT_SECRET = process.env.JWT_SECRET
+    
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set')
+      return null
+    }
+
     const token = getTokenFromRequest(request)
 
     if (!token) {
       return null
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET_SAFE) as unknown as { userId: string; email: string; role?: string }
+    const decoded = jwt.verify(token, JWT_SECRET) as unknown as { userId: string; email: string; role?: string }
 
     await connectDB()
     const user = await User.findById(decoded.userId).select('role')
