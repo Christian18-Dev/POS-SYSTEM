@@ -40,7 +40,7 @@ export default function Sidebar() {
             />
           </svg>
         </div>
-        <h2 className={styles.logoText}>POS System</h2>
+        {/* <h2 className={styles.logoText}>POS System</h2> */}
       </div>
 
       <nav className={styles.nav}>
