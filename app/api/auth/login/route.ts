@@ -11,6 +11,9 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required')
 }
 
+// TypeScript assertion: JWT_SECRET is guaranteed to be string after the check above
+const JWT_SECRET_SAFE = JWT_SECRET as string
+
 export async function POST(request: NextRequest) {
   // Apply rate limiting
   const rateLimitResponse = await loginRateLimit(request)
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
-      JWT_SECRET,
+      JWT_SECRET_SAFE,
       { expiresIn: '7d' }
     )
 

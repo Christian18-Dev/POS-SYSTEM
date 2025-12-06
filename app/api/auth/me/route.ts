@@ -9,6 +9,9 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required')
 }
 
+// TypeScript assertion: JWT_SECRET is guaranteed to be string after the check above
+const JWT_SECRET_SAFE = JWT_SECRET as string
+
 function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role?: string }
+    const decoded = jwt.verify(token, JWT_SECRET_SAFE) as { userId: string; email: string; role?: string }
 
     await connectDB()
     const user = await User.findById(decoded.userId).select('-password')
