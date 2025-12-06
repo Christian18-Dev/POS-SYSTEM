@@ -1,8 +1,9 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { Product, useProducts } from './ProductContext'
 import { apiRequest } from '@/lib/api'
+import { useAuth } from './AuthContext'
 
 export interface CartItem {
   product: Product
@@ -39,24 +40,33 @@ const SalesContext = createContext<SalesContextType | undefined>(undefined)
 
 const CART_STORAGE_KEY = 'pos_cart'
 
-export function SalesProvider({ children }: { children: ReactNode }) {
+function SalesProviderContent({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const [cart, setCart] = useState<CartItem[]>([])
   const [sales, setSales] = useState<Sale[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { refreshProducts } = useProducts()
 
-  const fetchSales = async () => {
+  const fetchSales = useCallback(async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      setSales([])
+      return
+    }
+
     try {
+      setIsLoading(true)
       const data = await apiRequest<{ success: boolean; sales: Sale[] }>('/api/sales')
       if (data.success) {
         setSales(data.sales)
       }
     } catch (error) {
       console.error('Error fetching sales:', error)
+      // Don't clear sales on error, keep existing data
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAuthenticated])
 
   useEffect(() => {
     // Load cart from localStorage (temporary storage)
@@ -69,10 +79,16 @@ export function SalesProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(CART_STORAGE_KEY)
       }
     }
-
-    // Fetch sales from API
-    fetchSales()
   }, [])
+
+  useEffect(() => {
+    // Wait for auth to finish loading, then fetch sales if authenticated
+    if (authLoading) {
+      return
+    }
+
+    fetchSales()
+  }, [isAuthenticated, authLoading, fetchSales])
 
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart)
@@ -190,7 +206,7 @@ export function SalesProvider({ children }: { children: ReactNode }) {
       value={{
         cart,
         sales,
-        isLoading,
+        isLoading: isLoading || authLoading,
         addToCart,
         removeFromCart,
         updateCartQuantity,
@@ -206,6 +222,10 @@ export function SalesProvider({ children }: { children: ReactNode }) {
       {children}
     </SalesContext.Provider>
   )
+}
+
+export function SalesProvider({ children }: { children: ReactNode }) {
+  return <SalesProviderContent>{children}</SalesProviderContent>
 }
 
 export function useSales() {

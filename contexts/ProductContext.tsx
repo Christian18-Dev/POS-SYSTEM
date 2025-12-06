@@ -1,7 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { apiRequest } from '@/lib/api'
+import { useAuth } from './AuthContext'
 
 export interface Product {
   id: string
@@ -26,26 +27,40 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-export function ProductProvider({ children }: { children: ReactNode }) {
+function ProductProviderContent({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      setProducts([])
+      return
+    }
+
     try {
+      setIsLoading(true)
       const data = await apiRequest<{ success: boolean; products: Product[] }>('/api/products')
       if (data.success) {
         setProducts(data.products)
       }
     } catch (error) {
       console.error('Error fetching products:', error)
+      // Don't clear products on error, keep existing data
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAuthenticated])
 
   useEffect(() => {
+    // Wait for auth to finish loading, then fetch products if authenticated
+    if (authLoading) {
+      return
+    }
+
     fetchProducts()
-  }, [])
+  }, [isAuthenticated, authLoading, fetchProducts])
 
   const addProduct = async (productData: Omit<Product, 'id'>) => {
     try {
@@ -105,7 +120,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     <ProductContext.Provider
       value={{
         products,
-        isLoading,
+        isLoading: isLoading || authLoading,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -118,6 +133,10 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   )
 }
 
+export function ProductProvider({ children }: { children: ReactNode }) {
+  return <ProductProviderContent>{children}</ProductProviderContent>
+}
+
 export function useProducts() {
   const context = useContext(ProductContext)
   if (context === undefined) {
@@ -125,4 +144,3 @@ export function useProducts() {
   }
   return context
 }
-
