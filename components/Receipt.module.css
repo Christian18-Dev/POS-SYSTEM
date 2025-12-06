@@ -1,0 +1,171 @@
+.receiptContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.receipt {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  width: 100%;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px dashed #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.storeName {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.storeInfo {
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.orderInfo {
+  margin-bottom: 1rem;
+  font-size: 11px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.items {
+  margin-bottom: 1rem;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+  padding: 1rem 0;
+}
+
+.item {
+  margin-bottom: 0.75rem;
+}
+
+.item:last-child {
+  margin-bottom: 0;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.itemName {
+  font-weight: bold;
+  flex: 1;
+  color: #1e293b;
+}
+
+.itemPrice {
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.itemDetails {
+  font-size: 10px;
+  color: #64748b;
+  margin-left: 0.5rem;
+}
+
+.totals {
+  margin-bottom: 1rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 11px;
+}
+
+.totalLabel {
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.totalAmount {
+  font-weight: bold;
+  font-size: 14px;
+  color: #667eea;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px dashed #e2e8f0;
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.printButtonContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.printButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.printButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.printButton:active {
+  transform: translateY(0);
+}
+
+@media print {
+  .receiptContainer {
+    display: block;
+  }
+
+  .printButtonContainer {
+    display: none;
+  }
+
+  .receipt {
+    box-shadow: none;
+    padding: 15px;
+    max-width: 100%;
+  }
+}
+
