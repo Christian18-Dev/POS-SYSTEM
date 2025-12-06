@@ -296,7 +296,7 @@ export default function LoginPage() {
 
         <div className={styles.footer}>
           <p>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a href="#" className={styles.link}>
               Contact administrator
             </a>
