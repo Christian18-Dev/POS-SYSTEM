@@ -5,15 +5,6 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { loginRateLimit } from '@/lib/rateLimit'
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required')
-}
-
-// TypeScript assertion: JWT_SECRET is guaranteed to be string after the check above
-const JWT_SECRET_SAFE = JWT_SECRET as string
-
 export async function POST(request: NextRequest) {
   // Apply rate limiting
   const rateLimitResponse = await loginRateLimit(request)
@@ -22,6 +13,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check for required environment variables
+    const JWT_SECRET = process.env.JWT_SECRET
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     await connectDB()
 
     const { email, password } = await request.json()
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
-      JWT_SECRET_SAFE,
+      JWT_SECRET,
       { expiresIn: '7d' }
     )
 
@@ -72,6 +73,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Login error:', error)
+    // Log more details for debugging (but don't expose to client)
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

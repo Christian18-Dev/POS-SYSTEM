@@ -3,15 +3,6 @@ import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required')
-}
-
-// TypeScript assertion: JWT_SECRET is guaranteed to be string after the check above
-const JWT_SECRET_SAFE = JWT_SECRET as string
-
 function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -22,6 +13,16 @@ function getTokenFromRequest(request: NextRequest): string | null {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check for required environment variables
+    const JWT_SECRET = process.env.JWT_SECRET
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     const token = getTokenFromRequest(request)
 
     if (!token) {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET_SAFE) as { userId: string; email: string; role?: string }
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role?: string }
 
     await connectDB()
     const user = await User.findById(decoded.userId).select('-password')
@@ -60,6 +61,11 @@ export async function GET(request: NextRequest) {
       )
     }
     console.error('Auth check error:', error)
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
