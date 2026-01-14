@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProducts } from '@/contexts/ProductContext'
 import { useSales, CartItem, Sale } from '@/contexts/SalesContext'
+import { useToast } from '@/contexts/ToastContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import Receipt from '@/components/Receipt'
@@ -21,6 +22,7 @@ export default function SalesPage() {
 
 function SalesContent() {
   const router = useRouter()
+  const toast = useToast()
   const { products } = useProducts()
   const {
     cart,
@@ -55,7 +57,7 @@ function SalesContent() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      alert('Cart is empty')
+      toast.info('Cart is empty')
       return
     }
 
@@ -66,9 +68,10 @@ function SalesContent() {
       setShowReceipt(true)
       setCustomerName('')
       setPaymentMethod('cash')
+      toast.success('Sale completed')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing sale. Please try again.'
-      alert(errorMessage)
+      toast.error(errorMessage)
       console.error(error)
     } finally {
       setIsProcessing(false)

@@ -5,9 +5,15 @@ import bcrypt from 'bcryptjs'
 import { requireAdmin } from '@/lib/auth'
 import { validateEmail, validatePasswordStrength, sanitizeString } from '@/lib/validation'
 import { handleApiError } from '@/lib/apiErrorHandler'
+import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = await apiRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAdmin(request)
     await connectDB()
 
@@ -30,6 +36,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await strictRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAdmin(request)
     await connectDB()
 

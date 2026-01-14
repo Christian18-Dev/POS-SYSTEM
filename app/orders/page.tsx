@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useSales, Sale } from '@/contexts/SalesContext'
+import { useEffect, useMemo, useState } from 'react'
+import { Sale } from '@/contexts/SalesContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import Receipt from '@/components/Receipt'
 import styles from './orders.module.css'
+import { apiRequest } from '@/lib/api'
+import { useToast } from '@/contexts/ToastContext'
+
+type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
 export default function OrdersPage() {
   return (
@@ -18,46 +22,68 @@ export default function OrdersPage() {
 }
 
 function OrdersContent() {
-  const { sales } = useSales()
+  const toast = useToast()
+  const [orders, setOrders] = useState<Sale[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [pagination, setPagination] = useState<Pagination | null>(null)
+  const [page, setPage] = useState(1)
+  const limit = 20
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [selectedOrder, setSelectedOrder] = useState<Sale | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Filter and search orders
-  const filteredOrders = useMemo(() => {
-    let filtered = [...sales]
+  const { startDateIso, endDateIso } = useMemo(() => {
+    if (dateFilter === 'all') return { startDateIso: null as string | null, endDateIso: null as string | null }
 
-    // Date filter
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today)
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
+    const start = new Date(today)
 
-    if (dateFilter === 'today') {
-      filtered = filtered.filter((sale) => new Date(sale.timestamp) >= today)
-    } else if (dateFilter === 'week') {
-      filtered = filtered.filter((sale) => new Date(sale.timestamp) >= weekAgo)
-    } else if (dateFilter === 'month') {
-      filtered = filtered.filter((sale) => new Date(sale.timestamp) >= monthAgo)
+    if (dateFilter === 'week') start.setDate(start.getDate() - 7)
+    if (dateFilter === 'month') start.setMonth(start.getMonth() - 1)
+
+    return { startDateIso: start.toISOString(), endDateIso: now.toISOString() }
+  }, [dateFilter])
+
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setPage(1)
+  }, [searchQuery, dateFilter])
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setIsLoading(true)
+      try {
+        const params = new URLSearchParams()
+        params.set('page', String(page))
+        params.set('limit', String(limit))
+        if (searchQuery.trim()) params.set('search', searchQuery.trim())
+        if (startDateIso && endDateIso) {
+          params.set('startDate', startDateIso)
+          params.set('endDate', endDateIso)
+        }
+
+        const data = await apiRequest<{
+          success: boolean
+          sales: Sale[]
+          pagination?: Pagination
+        }>(`/api/sales?${params.toString()}`)
+
+        if (data.success) {
+          setOrders(data.sales)
+          setPagination(data.pagination || null)
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to load orders')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (sale) =>
-          sale.id.toLowerCase().includes(query) ||
-          (sale.customerName && sale.customerName.toLowerCase().includes(query)) ||
-          (!sale.customerName && 'walk-in customer'.includes(query))
-      )
-    }
-
-    // Sort by most recent first
-    return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-  }, [sales, searchQuery, dateFilter])
+    fetchOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, startDateIso, endDateIso, searchQuery])
 
   const handleViewOrder = (order: Sale) => {
     setSelectedOrder(order)
@@ -161,7 +187,11 @@ function OrdersContent() {
 
         {/* Orders Table */}
         <div className={styles.ordersTable}>
-          {filteredOrders.length > 0 ? (
+          {isLoading ? (
+            <div className={styles.emptyState}>
+              <p>Loading orders...</p>
+            </div>
+          ) : orders.length > 0 ? (
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -176,7 +206,7 @@ function OrdersContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
+                {orders.map((order) => (
                   <tr key={order.id}>
                     <td className={styles.orderId}>{order.id}</td>
                     <td className={styles.date}>{formatDateShort(order.timestamp)}</td>
@@ -219,10 +249,30 @@ function OrdersContent() {
           )}
         </div>
 
-        {/* Order Count */}
-        {filteredOrders.length > 0 && (
-          <div className={styles.orderCount}>
-            Showing {filteredOrders.length} of {sales.length} order{sales.length !== 1 ? 's' : ''}
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className={styles.paginationBar}>
+            <div className={styles.paginationInfo}>
+              Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
+            </div>
+            <div className={styles.paginationControls}>
+              <button
+                type="button"
+                className={styles.paginationButton}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || isLoading}
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                className={styles.paginationButton}
+                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                disabled={page >= pagination.totalPages || isLoading}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </main>

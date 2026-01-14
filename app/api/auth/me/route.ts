@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import jwt from 'jsonwebtoken'
+import { apiRateLimit } from '@/lib/rateLimit'
 
 function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
@@ -13,6 +14,11 @@ function getTokenFromRequest(request: NextRequest): string | null {
 
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = await apiRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     // Check for required environment variables
     const JWT_SECRET = process.env.JWT_SECRET
     if (!JWT_SECRET) {

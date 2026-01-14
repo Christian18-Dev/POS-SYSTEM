@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProductProvider } from '@/contexts/ProductContext'
 import { SalesProvider } from '@/contexts/SalesContext'
+import { ToastProvider } from '@/contexts/ToastContext'
 
 export const metadata: Metadata = {
   title: 'POS System',
@@ -17,13 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <ProductProvider>
-            <SalesProvider>
-              {children}
-            </SalesProvider>
-          </ProductProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ProductProvider>
+              <SalesProvider>{children}</SalesProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   )

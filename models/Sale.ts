@@ -87,7 +87,6 @@ const SaleSchema: Schema = new Schema(
 
 // Index for faster queries
 SaleSchema.index({ createdAt: -1 })
-SaleSchema.index({ orderId: 1 })
 SaleSchema.index({ customerName: 'text' })
 
 const Sale: Model<ISale> = mongoose.models.Sale || mongoose.model<ISale>('Sale', SaleSchema)

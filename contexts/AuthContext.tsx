@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/contexts/ToastContext'
 
 export type UserRole = 'admin' | 'staff'
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const toast = useToast()
 
   useEffect(() => {
     // Check if user is logged in on mount
@@ -93,14 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok && data.success) {
         setAuthToken(data.token)
         setUser(data.user)
+        toast.success('Signed in successfully')
         return true
       } else {
-        alert(data.error || 'Login failed')
+        toast.error(data.error || 'Login failed')
         return false
       }
     } catch (error) {
       console.error('Login error:', error)
-      alert('An error occurred during login. Please try again.')
+      toast.error('An error occurred during login. Please try again.')
       return false
     }
   }
@@ -108,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     removeAuthToken()
+    toast.info('Signed out')
     router.push('/')
   }
 

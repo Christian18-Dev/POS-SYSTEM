@@ -4,15 +4,24 @@ import Product from '@/models/Product'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeRegexInput, sanitizeString, validatePrice, validateStock } from '@/lib/validation'
 import { handleApiError } from '@/lib/apiErrorHandler'
+import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
 export async function GET(request: NextRequest) {
   try {
+    // Apply generic API rate limiting
+    const rateLimitResponse = await apiRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAuth(request)
     await connectDB()
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search')
     const category = searchParams.get('category')
+    const pageParam = searchParams.get('page')
+    const limitParam = searchParams.get('limit')
 
     let query: any = {}
 
@@ -31,7 +40,17 @@ export async function GET(request: NextRequest) {
       query.category = sanitizeString(category, 50)
     }
 
-    const products = await Product.find(query).sort({ createdAt: -1 })
+    // Pagination (optional): if page/limit is omitted, keep existing behavior (return all)
+    const hasPagination = pageParam !== null || limitParam !== null
+    const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1)
+    const limitRaw = parseInt(limitParam || '24', 10) || 24
+    const limit = Math.min(Math.max(limitRaw, 1), 100) // safety cap
+    const skip = (page - 1) * limit
+
+    const total = hasPagination ? await Product.countDocuments(query) : undefined
+
+    const findQuery = Product.find(query).sort({ createdAt: -1 })
+    const products = hasPagination ? await findQuery.skip(skip).limit(limit) : await findQuery
 
     return NextResponse.json({
       success: true,
@@ -45,6 +64,16 @@ export async function GET(request: NextRequest) {
         sku: product.sku,
         image: product.image,
       })),
+      ...(hasPagination && total !== undefined
+        ? {
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages: Math.max(1, Math.ceil(total / limit)),
+            },
+          }
+        : {}),
     })
   } catch (error) {
     return handleApiError(error)
@@ -53,6 +82,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Stricter rate limit for write operations
+    const rateLimitResponse = await strictRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAuth(request)
     await connectDB()
 

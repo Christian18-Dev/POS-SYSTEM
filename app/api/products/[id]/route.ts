@@ -4,12 +4,18 @@ import Product from '@/models/Product'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeString, validatePrice, validateStock } from '@/lib/validation'
 import { handleApiError } from '@/lib/apiErrorHandler'
+import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const rateLimitResponse = await apiRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAuth(request)
     await connectDB()
 
@@ -45,6 +51,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const rateLimitResponse = await strictRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAuth(request)
     await connectDB()
 
@@ -135,6 +146,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const rateLimitResponse = await strictRateLimit(request)
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     await requireAuth(request)
     await connectDB()
 

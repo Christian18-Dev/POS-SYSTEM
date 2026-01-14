@@ -1,10 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useProducts, Product } from '@/contexts/ProductContext'
+import { useEffect, useMemo, useState } from 'react'
+import { Product } from '@/contexts/ProductContext'
+import { useToast } from '@/contexts/ToastContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './products.module.css'
+import { apiRequest } from '@/lib/api'
+
+type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
 export default function ProductsPage() {
   return (
@@ -17,7 +21,11 @@ export default function ProductsPage() {
 }
 
 function ProductsContent() {
-  const { products, addProduct, updateProduct, deleteProduct } = useProducts()
+  const toast = useToast()
+  const [products, setProducts] = useState<Product[]>([])
+  const [pagination, setPagination] = useState<Pagination | null>(null)
+  const [page, setPage] = useState(1)
+  const [isFetching, setIsFetching] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState({
@@ -28,6 +36,33 @@ function ProductsContent() {
     category: '',
     sku: '',
   })
+
+  const limit = 12
+
+  const fetchProducts = async (targetPage: number) => {
+    setIsFetching(true)
+    try {
+      const data = await apiRequest<{
+        success: boolean
+        products: Product[]
+        pagination?: Pagination
+      }>(`/api/products?page=${targetPage}&limit=${limit}`)
+
+      if (data.success) {
+        setProducts(data.products)
+        setPagination(data.pagination || null)
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load products')
+    } finally {
+      setIsFetching(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProducts(page)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
 
   const handleOpenModal = (product?: Product) => {
     if (product) {
@@ -81,25 +116,45 @@ function ProductsContent() {
 
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, productData)
+        await apiRequest<{ success: boolean; product: Product }>(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(productData),
+        })
       } else {
-        await addProduct(productData)
+        await apiRequest<{ success: boolean; product: Product }>('/api/products', {
+          method: 'POST',
+          body: JSON.stringify(productData),
+        })
       }
       handleCloseModal()
+      toast.success(editingProduct ? 'Product updated' : 'Product created')
+      await fetchProducts(page)
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'An error occurred')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
       try {
-        await deleteProduct(id)
+        await apiRequest<{ success: boolean }>(`/api/products/${id}`, { method: 'DELETE' })
+        toast.success('Product deleted')
+        // If we deleted the last item on the page, go back a page when possible
+        const remaining = products.length - 1
+        const nextPage =
+          remaining <= 0 && page > 1 ? page - 1 : page
+        if (nextPage !== page) setPage(nextPage)
+        else await fetchProducts(page)
       } catch (error) {
-        alert(error instanceof Error ? error.message : 'An error occurred')
+        toast.error(error instanceof Error ? error.message : 'An error occurred')
       }
     }
   }
+
+  const pageLabel = useMemo(() => {
+    if (!pagination) return `Page ${page}`
+    return `Page ${pagination.page} of ${pagination.totalPages}`
+  }, [page, pagination])
 
   return (
     <div className={styles.products}>
@@ -119,52 +174,86 @@ function ProductsContent() {
       </header>
 
       <main className={styles.main}>
-        <div className={styles.productsGrid}>
-          {products.map((product) => (
-            <div key={product.id} className={styles.productCard}>
-              <div className={styles.productHeader}>
-                <div>
-                  <h3 className={styles.productName}>{product.name}</h3>
-                  <p className={styles.productSku}>SKU: {product.sku}</p>
+        {isFetching ? (
+          <div className={styles.emptyState}>
+            <p>Loading products...</p>
+          </div>
+        ) : (
+          <>
+            <div className={styles.productsGrid}>
+              {products.map((product) => (
+                <div key={product.id} className={styles.productCard}>
+                  <div className={styles.productHeader}>
+                    <div>
+                      <h3 className={styles.productName}>{product.name}</h3>
+                      <p className={styles.productSku}>SKU: {product.sku}</p>
+                    </div>
+                    <div className={styles.productActions}>
+                      <button
+                        onClick={() => handleOpenModal(product)}
+                        className={styles.editButton}
+                        aria-label="Edit product"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11.5 4.5L15.5 8.5M3 17H7L15.5 8.5L11.5 4.5L3 13V17H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className={styles.deleteButton}
+                        aria-label="Delete product"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 7.5H15M8.33333 10.8333V14.1667M11.6667 10.8333V14.1667M4.16667 7.5L4.99917 15.8333C4.99917 16.2754 5.17476 16.6993 5.48732 17.0118C5.79988 17.3244 6.22381 17.5 6.66584 17.5H13.3325C13.7745 17.5 14.1985 17.3244 14.511 17.0118C14.8236 16.6993 14.9992 16.2754 14.9992 15.8333L15.8333 7.5M7.5 7.5V5.83333C7.5 5.39131 7.67559 4.96738 7.98815 4.65482C8.30071 4.34226 8.72464 4.16667 9.16667 4.16667H10.8333C11.2754 4.16667 11.6993 4.34226 12.0118 4.65482C12.3244 4.96738 12.5 5.39131 12.5 5.83333V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p className={styles.productDescription}>{product.description}</p>
+                  <div className={styles.productDetails}>
+                    <div className={styles.productDetail}>
+                      <span className={styles.detailLabel}>Category:</span>
+                      <span className={styles.detailValue}>{product.category}</span>
+                    </div>
+                    <div className={styles.productDetail}>
+                      <span className={styles.detailLabel}>Stock:</span>
+                      <span className={`${styles.detailValue} ${product.stock < 10 ? styles.lowStock : ''}`}>
+                        {product.stock} units
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.productPrice}>₱{product.price.toFixed(2)}</div>
                 </div>
-                <div className={styles.productActions}>
-                  <button
-                    onClick={() => handleOpenModal(product)}
-                    className={styles.editButton}
-                    aria-label="Edit product"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M11.5 4.5L15.5 8.5M3 17H7L15.5 8.5L11.5 4.5L3 13V17H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className={styles.deleteButton}
-                    aria-label="Delete product"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 7.5H15M8.33333 10.8333V14.1667M11.6667 10.8333V14.1667M4.16667 7.5L4.99917 15.8333C4.99917 16.2754 5.17476 16.6993 5.48732 17.0118C5.79988 17.3244 6.22381 17.5 6.66584 17.5H13.3325C13.7745 17.5 14.1985 17.3244 14.511 17.0118C14.8236 16.6993 14.9992 16.2754 14.9992 15.8333L15.8333 7.5M7.5 7.5V5.83333C7.5 5.39131 7.67559 4.96738 7.98815 4.65482C8.30071 4.34226 8.72464 4.16667 9.16667 4.16667H10.8333C11.2754 4.16667 11.6993 4.34226 12.0118 4.65482C12.3244 4.96738 12.5 5.39131 12.5 5.83333V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <p className={styles.productDescription}>{product.description}</p>
-              <div className={styles.productDetails}>
-                <div className={styles.productDetail}>
-                  <span className={styles.detailLabel}>Category:</span>
-                  <span className={styles.detailValue}>{product.category}</span>
-                </div>
-                <div className={styles.productDetail}>
-                  <span className={styles.detailLabel}>Stock:</span>
-                  <span className={`${styles.detailValue} ${product.stock < 10 ? styles.lowStock : ''}`}>
-                    {product.stock} units
-                  </span>
-                </div>
-              </div>
-              <div className={styles.productPrice}>₱{product.price.toFixed(2)}</div>
+              ))}
             </div>
-          ))}
-        </div>
+
+            {pagination && pagination.totalPages > 1 && (
+              <div className={styles.paginationBar}>
+                <span className={styles.paginationInfo}>
+                  {pageLabel} • {pagination.total} total
+                </span>
+                <div className={styles.paginationControls}>
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={page >= pagination.totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {products.length === 0 && (
           <div className={styles.emptyState}>

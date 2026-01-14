@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import { apiRequest } from '@/lib/api'
@@ -27,6 +28,7 @@ export default function UsersPage() {
 
 function UsersContent() {
   const { isAdmin } = useAuth()
+  const toast = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -53,7 +55,7 @@ function UsersContent() {
       }
     } catch (error) {
       console.error('Error fetching users:', error)
-      alert(error instanceof Error ? error.message : 'An error occurred')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -95,7 +97,7 @@ function UsersContent() {
     e.preventDefault()
 
     if (!editingUser && !formData.password) {
-      alert('Password is required for new users')
+      toast.error('Password is required for new users')
       return
     }
 
@@ -126,8 +128,9 @@ function UsersContent() {
       }
       await fetchUsers()
       handleCloseModal()
+      toast.success(editingUser ? 'User updated' : 'User created')
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'An error occurred')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
@@ -138,8 +141,9 @@ function UsersContent() {
           method: 'DELETE',
         })
         await fetchUsers()
+        toast.success('User deleted')
       } catch (error) {
-        alert(error instanceof Error ? error.message : 'An error occurred')
+        toast.error(error instanceof Error ? error.message : 'An error occurred')
       }
     }
   }
