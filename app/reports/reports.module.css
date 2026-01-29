@@ -72,10 +72,10 @@
 }
 
 .filterButton.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   border-color: transparent;
   color: white;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 4px rgba(31, 110, 61, 0.22);
 }
 
 .customDateRange {
@@ -110,8 +110,8 @@
 
 .dateInputGroup input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.12);
 }
 
 .dateRangeDisplay {
@@ -151,7 +151,7 @@
   width: 48px;
   height: 48px;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,7 +225,7 @@
 .chartBar {
   width: 100%;
   max-width: 60px;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, var(--brand-green-600) 0%, var(--brand-green-500) 100%);
   border-radius: 0.5rem 0.5rem 0 0;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -298,7 +298,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   color: white;
   display: flex;
   align-items: center;
@@ -359,7 +359,7 @@
 .paymentMethodAmount {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 .paymentMethodBar {
@@ -372,7 +372,7 @@
 
 .paymentMethodBarFill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, var(--brand-green-600) 0%, var(--brand-green-500) 100%);
   border-radius: 9999px;
   transition: width 0.3s ease;
 }
@@ -410,6 +410,16 @@
 }
 
 @media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
   .main {
     padding: 1rem;
   }
@@ -449,3 +459,12 @@
   }
 }
 
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -31,13 +31,13 @@ body {
   --background-end-rgb: 255, 255, 255;
   
   /* POS System Color Palette */
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
+  --primary-color: #1f6e3d;
+  --primary-hover: #185a31;
   --secondary-color: #64748b;
   --success-color: #10b981;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
-  --background-light: #f8fafc;
+  --background-light: #f6f5ea;
   --background-white: #ffffff;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
@@ -46,6 +46,15 @@ body {
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  --brand-green-700: #185a31;
+  --brand-green-600: #1f6e3d;
+  --brand-green-500: #2f8a4a;
+  --brand-cream-50: #f6f5ea;
+  --brand-cream-100: #f1efdf;
+
+  --brand-gradient: linear-gradient(135deg, var(--brand-green-600) 0%, var(--brand-green-500) 100%);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(31, 110, 61, 0.16) 0%, rgba(47, 138, 74, 0.10) 100%);
 }
 
 @media (prefers-color-scheme: dark) {

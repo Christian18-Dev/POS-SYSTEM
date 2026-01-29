@@ -82,6 +82,10 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
+  }, [cart])
+
+  useEffect(() => {
     // Wait for auth to finish loading, then fetch sales if authenticated
     if (authLoading) {
       return
@@ -89,11 +93,6 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
 
     fetchSales()
   }, [isAuthenticated, authLoading, fetchSales])
-
-  const saveCart = (newCart: CartItem[]) => {
-    setCart(newCart)
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart))
-  }
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCart((currentCart) => {
@@ -105,35 +104,32 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
-        saveCart(updatedCart)
         return updatedCart
       } else {
         const updatedCart = [...currentCart, { product, quantity }]
-        saveCart(updatedCart)
         return updatedCart
       }
     })
   }
 
   const removeFromCart = (productId: string) => {
-    const updatedCart = cart.filter((item) => item.product.id !== productId)
-    saveCart(updatedCart)
+    setCart((currentCart) => currentCart.filter((item) => item.product.id !== productId))
   }
 
   const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId)
-      return
-    }
+    setCart((currentCart) => {
+      if (quantity <= 0) {
+        return currentCart.filter((item) => item.product.id !== productId)
+      }
 
-    const updatedCart = cart.map((item) =>
-      item.product.id === productId ? { ...item, quantity } : item
-    )
-    saveCart(updatedCart)
+      return currentCart.map((item) =>
+        item.product.id === productId ? { ...item, quantity } : item
+      )
+    })
   }
 
   const clearCart = () => {
-    saveCart([])
+    setCart([])
   }
 
   const getCartTotal = () => {

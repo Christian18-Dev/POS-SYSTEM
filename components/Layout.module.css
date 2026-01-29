@@ -16,4 +16,9 @@
   }
 }
 
-
+@media (max-width: 480px) {
+  .main {
+    margin-left: 0;
+    padding-bottom: 76px;
+  }
+}

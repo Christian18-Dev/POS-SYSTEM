@@ -83,6 +83,38 @@
   padding-right: 0.5rem;
 }
 
+@media (max-width: 1024px) {
+  .salesLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .productsGrid {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+
+  .main {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .salesLayout {
+    gap: 1rem;
+  }
+}
+
 .productCard {
   background: white;
   border-radius: 0.75rem;
@@ -136,7 +168,7 @@
 .productPrice {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 .productStock {
@@ -152,7 +184,7 @@
 .addButton {
   width: 100%;
   padding: 0.625rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -164,7 +196,7 @@
 
 .addButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 6px rgba(31, 110, 61, 0.25);
 }
 
 .addButton:disabled {
@@ -199,9 +231,9 @@
 }
 
 .quantityButton:hover:not(:disabled) {
-  background: #667eea;
+  background: var(--primary-color);
   color: white;
-  border-color: #667eea;
+  border-color: var(--primary-color);
 }
 
 .quantityButton:disabled {
@@ -353,9 +385,9 @@
 }
 
 .cartQuantityButton:hover:not(:disabled) {
-  background: #667eea;
+  background: var(--primary-color);
   color: white;
-  border-color: #667eea;
+  border-color: var(--primary-color);
 }
 
 .cartQuantityButton:disabled {
@@ -422,7 +454,7 @@
 .totalAmount {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 .checkoutForm {
@@ -456,14 +488,14 @@
 .formGroup input:focus,
 .formGroup select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.12);
 }
 
 .checkoutButton {
   width: 100%;
   padding: 0.875rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -471,12 +503,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 6px rgba(31, 110, 61, 0.25);
 }
 
 .checkoutButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 12px rgba(31, 110, 61, 0.35);
 }
 
 .checkoutButton:disabled {
@@ -613,14 +645,13 @@
 }
 
 .newSaleButton {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--brand-gradient);
   color: white;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 4px rgba(31, 110, 61, 0.25);
 }
 
 .newSaleButton:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 8px rgba(31, 110, 61, 0.4);
 }
-
 

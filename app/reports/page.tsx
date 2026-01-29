@@ -3,6 +3,15 @@
 import { useState, useMemo } from 'react'
 import { useSales, Sale } from '@/contexts/SalesContext'
 import { useProducts } from '@/contexts/ProductContext'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './reports.module.css'
@@ -254,25 +263,37 @@ function ReportsContent() {
         {stats.dailyRevenue.length > 0 && (
           <div className={styles.chartCard}>
             <h2 className={styles.cardTitle}>Revenue Trend (Last 7 Days)</h2>
-            <div className={styles.chart}>
-              <div className={styles.chartBars}>
-                {stats.dailyRevenue.map(([date, revenue], index) => {
-                  const height = (revenue / stats.maxRevenue) * 100
-                  return (
-                    <div key={index} className={styles.chartBarContainer}>
-                      <div className={styles.chartBarWrapper}>
-                        <div
-                          className={styles.chartBar}
-                          style={{ height: `${height}%` }}
-                          title={formatCurrency(revenue)}
-                        />
-                      </div>
-                      <div className={styles.chartLabel}>{date}</div>
-                      <div className={styles.chartValue}>{formatCurrency(revenue)}</div>
-                    </div>
-                  )
-                })}
-              </div>
+            <div className={styles.chart} style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={stats.dailyRevenue.map(([date, revenue]) => ({ date, revenue }))}
+                  margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    tickFormatter={(v) => `₱${Number(v).toFixed(0)}`}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                    labelFormatter={(label) => `Date: ${label}`}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 12px 30px rgba(2, 6, 23, 0.12)',
+                    }}
+                  />
+                  <Bar dataKey="revenue" fill="#667eea" radius={[10, 10, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}

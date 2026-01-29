@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './Sidebar.module.css'
 
@@ -24,23 +25,8 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.sidebarHeader}>
         <div className={styles.logo}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M7 7H17M7 11H17M7 15H13"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <Image src="/FarmaciaLogo.png" alt="Farmacia Bethesda" width={72} height={72} priority />
         </div>
-        {/* <h2 className={styles.logoText}>POS System</h2> */}
       </div>
 
       <nav className={styles.nav}>
