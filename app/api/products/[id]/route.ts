@@ -8,7 +8,7 @@ import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await apiRateLimit(request)
@@ -19,7 +19,9 @@ export async function GET(
     await requireAuth(request)
     await connectDB()
 
-    const product = await Product.findById(params.id)
+    const { id } = await params
+
+    const product = await Product.findById(id)
 
     if (!product) {
       return NextResponse.json(
@@ -48,7 +50,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await strictRateLimit(request)
@@ -59,10 +61,12 @@ export async function PUT(
     await requireAuth(request)
     await connectDB()
 
+    const { id } = await params
+
     const body = await request.json()
     const { name, description, price, stock, category, sku, image } = body
 
-    const product = await Product.findById(params.id)
+    const product = await Product.findById(id)
 
     if (!product) {
       return NextResponse.json(
@@ -143,7 +147,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await strictRateLimit(request)
@@ -154,7 +158,9 @@ export async function DELETE(
     await requireAuth(request)
     await connectDB()
 
-    const product = await Product.findByIdAndDelete(params.id)
+    const { id } = await params
+
+    const product = await Product.findByIdAndDelete(id)
 
     if (!product) {
       return NextResponse.json(
