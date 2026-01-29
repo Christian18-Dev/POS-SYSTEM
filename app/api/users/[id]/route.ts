@@ -9,7 +9,7 @@ import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await apiRateLimit(request)
@@ -20,7 +20,9 @@ export async function GET(
     await requireAdmin(request)
     await connectDB()
 
-    const user = await User.findById(params.id).select('-password')
+    const { id } = await params
+
+    const user = await User.findById(id).select('-password')
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -43,7 +45,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await strictRateLimit(request)
@@ -54,10 +56,12 @@ export async function PUT(
     await requireAdmin(request)
     await connectDB()
 
+    const { id } = await params
+
     const body = await request.json()
     const { email, password, name, role } = body
 
-    const user = await User.findById(params.id)
+    const user = await User.findById(id)
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -113,7 +117,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await strictRateLimit(request)
@@ -124,7 +128,9 @@ export async function DELETE(
     const adminUser = await requireAdmin(request)
     await connectDB()
 
-    const user = await User.findById(params.id)
+    const { id } = await params
+
+    const user = await User.findById(id)
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -135,7 +141,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
     }
 
-    await User.findByIdAndDelete(params.id)
+    await User.findByIdAndDelete(id)
 
     return NextResponse.json({
       success: true,
