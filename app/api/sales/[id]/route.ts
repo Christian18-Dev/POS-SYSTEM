@@ -8,7 +8,7 @@ import { sanitizeString } from '@/lib/validation'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const rateLimitResponse = await apiRateLimit(request)
@@ -19,7 +19,9 @@ export async function GET(
     await requireAuth(request)
     await connectDB()
 
-    const orderId = sanitizeString(params.id, 100).toUpperCase()
+    const { id } = await params
+
+    const orderId = sanitizeString(id, 100).toUpperCase()
 
     const sale = await Sale.findOne({ orderId })
 
