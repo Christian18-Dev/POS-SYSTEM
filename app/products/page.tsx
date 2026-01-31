@@ -8,6 +8,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './products.module.css'
 import { apiRequest } from '@/lib/api'
+import { isLowStock } from '@/lib/stockAlerts'
 
 type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
@@ -206,6 +207,9 @@ function ProductsContent() {
                       <p className={styles.productSku}>SKU: {product.sku}</p>
                     </div>
                     <div className={styles.productActions}>
+                      {isLowStock(product.stock) && (
+                        <span className={styles.lowStockBadge}>LOW STOCK</span>
+                      )}
                       {isAdmin && (
                         <>
                           <button
@@ -238,7 +242,7 @@ function ProductsContent() {
                     </div>
                     <div className={styles.productDetail}>
                       <span className={styles.detailLabel}>Stock:</span>
-                      <span className={`${styles.detailValue} ${product.stock < 10 ? styles.lowStock : ''}`}>
+                      <span className={`${styles.detailValue} ${isLowStock(product.stock) ? styles.lowStock : ''}`}>
                         {product.stock} units
                       </span>
                     </div>

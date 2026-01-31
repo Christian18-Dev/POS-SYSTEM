@@ -10,10 +10,197 @@
   min-height: 100vh;
 }
 
+ .lowStockBellWrap {
+   position: fixed;
+   top: 28px;
+   right: 28px;
+   z-index: 1200;
+ }
+
+ .lowStockDropdown {
+   position: relative;
+ }
+
+ .lowStockBellButton {
+   width: 56px;
+   height: 56px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-radius: 16px;
+   border: 1px solid rgba(226, 232, 240, 0.9);
+   background: rgba(255, 255, 255, 0.95);
+   color: #0f172a;
+   cursor: pointer;
+   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+   transition: transform 0.15s ease, box-shadow 0.15s ease;
+   position: relative;
+ }
+
+ .lowStockBellButton:hover {
+   transform: translateY(-1px);
+   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+ }
+
+ .lowStockBellBadge {
+   position: absolute;
+   top: -6px;
+   right: -6px;
+   min-width: 22px;
+   height: 22px;
+   padding: 0 7px;
+   border-radius: 9999px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: #ef4444;
+   color: white;
+   font-size: 12px;
+   font-weight: 800;
+   border: 2px solid rgba(255, 255, 255, 0.95);
+ }
+
+ .lowStockBellMenu {
+   position: absolute;
+   top: calc(100% + 12px);
+   right: 0;
+   width: 320px;
+   background: rgba(255, 255, 255, 0.98);
+   border: 1px solid rgba(226, 232, 240, 0.9);
+   border-radius: 16px;
+   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+   overflow: hidden;
+   transform-origin: top right;
+   animation: lowStockMenuIn 120ms ease-out;
+ }
+
+ .lowStockBellMenu::before {
+   content: '';
+   position: absolute;
+   top: -7px;
+   right: 18px;
+   width: 14px;
+   height: 14px;
+   background: rgba(255, 255, 255, 0.98);
+   border-left: 1px solid rgba(226, 232, 240, 0.9);
+   border-top: 1px solid rgba(226, 232, 240, 0.9);
+   transform: rotate(45deg);
+ }
+
+ @keyframes lowStockMenuIn {
+   from {
+     opacity: 0;
+     transform: translateY(-6px) scale(0.98);
+   }
+   to {
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+ }
+
+ .lowStockBellMenuHeader {
+   padding: 12px 14px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 10px;
+   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+ }
+
+ .lowStockBellMenuTitle {
+   font-size: 12px;
+   font-weight: 900;
+   color: #0f172a;
+   letter-spacing: 0.02em;
+ }
+
+ .lowStockBellMenuMeta {
+   height: 22px;
+   padding: 0 10px;
+   border-radius: 9999px;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 12px;
+   font-weight: 900;
+   color: #ef4444;
+   background: rgba(239, 68, 68, 0.1);
+ }
+
+ .lowStockBellMenuList {
+   padding: 8px;
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   max-height: min(55vh, 420px);
+   overflow: auto;
+ }
+
+ .lowStockBellMenuItem {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 12px;
+   padding: 10px 12px;
+   border-radius: 12px;
+   background: rgba(15, 23, 42, 0.04);
+   border: 1px solid rgba(15, 23, 42, 0.06);
+   transition: background 0.15s ease, border-color 0.15s ease;
+ }
+
+ .lowStockBellMenuItem:hover {
+   background: rgba(15, 23, 42, 0.06);
+   border-color: rgba(239, 68, 68, 0.25);
+ }
+
+ .lowStockBellProductName {
+   color: #0f172a;
+   font-size: 13px;
+   font-weight: 700;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+ }
+
+ .lowStockBellProductStock {
+   color: #ef4444;
+   font-size: 13px;
+   font-weight: 800;
+   flex-shrink: 0;
+ }
+
+ .lowStockBellMenuMore {
+   padding: 10px 12px;
+   font-size: 12px;
+   color: rgba(15, 23, 42, 0.7);
+ }
+
+ .lowStockBellEmpty {
+   padding: 18px 16px;
+ }
+
+ .lowStockBellEmptyTitle {
+   font-size: 13px;
+   font-weight: 900;
+   color: #0f172a;
+   margin-bottom: 4px;
+ }
+
+ .lowStockBellEmptyText {
+   font-size: 12px;
+   color: rgba(15, 23, 42, 0.7);
+   line-height: 1.4;
+ }
+
 @media (max-width: 768px) {
   .main {
     margin-left: 80px;
   }
+
+   .lowStockBellWrap {
+     right: 18px;
+     top: 18px;
+   }
 }
 
 @media (max-width: 480px) {
@@ -21,4 +208,9 @@
     margin-left: 0;
     padding-bottom: 76px;
   }
+
+   .lowStockBellWrap {
+     right: 14px;
+     top: 14px;
+   }
 }

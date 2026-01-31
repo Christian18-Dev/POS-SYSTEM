@@ -22,7 +22,7 @@ interface ProductContextType {
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
   getProduct: (id: string) => Product | undefined
-  refreshProducts: () => Promise<void>
+  refreshProducts: () => Promise<Product[]>
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
@@ -36,7 +36,7 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
     if (!isAuthenticated) {
       setIsLoading(false)
       setProducts([])
-      return
+      return []
     }
 
     try {
@@ -44,10 +44,13 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
       const data = await apiRequest<{ success: boolean; products: Product[] }>('/api/products')
       if (data.success) {
         setProducts(data.products)
+        return data.products
       }
+      return []
     } catch (error) {
       console.error('Error fetching products:', error)
       // Don't clear products on error, keep existing data
+      return []
     } finally {
       setIsLoading(false)
     }
@@ -122,7 +125,7 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
   }
 
   const refreshProducts = async () => {
-    await fetchProducts()
+    return await fetchProducts()
   }
 
   return (

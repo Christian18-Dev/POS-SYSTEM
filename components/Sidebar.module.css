@@ -21,6 +21,112 @@
   gap: 16px;
 }
 
+ .alerts {
+   display: flex;
+   align-items: center;
+ }
+
+ .alertDropdown {
+   position: relative;
+ }
+
+ .alertButton {
+   width: 40px;
+   height: 40px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-radius: 10px;
+   border: 1px solid rgba(255, 255, 255, 0.14);
+   background: rgba(255, 255, 255, 0.06);
+   color: rgba(255, 255, 255, 0.9);
+   cursor: pointer;
+   transition: all 0.2s;
+   position: relative;
+ }
+
+ .alertButton:hover {
+   background: rgba(255, 255, 255, 0.1);
+ }
+
+ .alertBadge {
+   position: absolute;
+   top: -6px;
+   right: -6px;
+   min-width: 18px;
+   height: 18px;
+   padding: 0 6px;
+   border-radius: 9999px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: #ef4444;
+   color: white;
+   font-size: 11px;
+   font-weight: 700;
+   border: 2px solid rgba(15, 23, 42, 0.9);
+ }
+
+ .alertMenu {
+   position: absolute;
+   top: calc(100% + 10px);
+   right: 0;
+   width: 260px;
+   background: rgba(15, 23, 42, 0.98);
+   border: 1px solid rgba(255, 255, 255, 0.12);
+   border-radius: 12px;
+   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+   overflow: hidden;
+   z-index: 1100;
+ }
+
+ .alertMenuHeader {
+   padding: 10px 12px;
+   font-size: 12px;
+   font-weight: 700;
+   color: rgba(255, 255, 255, 0.9);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+ }
+
+ .alertMenuList {
+   padding: 6px;
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
+ }
+
+ .alertMenuItem {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 10px;
+   padding: 8px 10px;
+   border-radius: 10px;
+   background: rgba(255, 255, 255, 0.06);
+ }
+
+ .alertProductName {
+   color: rgba(255, 255, 255, 0.9);
+   font-size: 12px;
+   font-weight: 600;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+ }
+
+ .alertProductStock {
+   color: #fca5a5;
+   font-size: 12px;
+   font-weight: 700;
+   flex-shrink: 0;
+ }
+
+ .alertMenuMore {
+   padding: 8px 10px;
+   font-size: 12px;
+   color: rgba(255, 255, 255, 0.7);
+ }
+
 .logo {
   width: 76px;
   height: 76px;
@@ -117,6 +223,11 @@
     justify-content: center;
     padding: 20px 12px;
   }
+
+   .alertMenu {
+     right: -8px;
+     width: 240px;
+   }
 
   .navItem {
     justify-content: center;

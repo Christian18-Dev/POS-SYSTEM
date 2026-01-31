@@ -19,7 +19,7 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { products } = useProducts()
   const { sales, getTotalSales, getTotalOrders } = useSales()
 
@@ -90,6 +90,11 @@ function DashboardContent() {
     },
   ]
 
+  const visibleStats = stats.filter((stat) => {
+    if (isAdmin) return true
+    return stat.title !== 'Total Orders' && stat.title !== 'Total Revenue'
+  })
+
   return (
     <div className={styles.dashboard}>
       <header className={styles.header}>
@@ -103,7 +108,7 @@ function DashboardContent() {
 
       <main className={styles.main}>
         <div className={styles.statsGrid}>
-          {stats.map((stat, index) => (
+          {visibleStats.map((stat, index) => (
             <div key={index} className={styles.statCard}>
               <div className={styles.statIcon}>{stat.icon}</div>
               <div className={styles.statContent}>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useProducts } from '@/contexts/ProductContext'
 import { useSales, CartItem, Sale } from '@/contexts/SalesContext'
 import { useToast } from '@/contexts/ToastContext'
+import { isLowStock } from '@/lib/stockAlerts'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import Receipt from '@/components/Receipt'
@@ -125,7 +126,7 @@ function SalesContent() {
                       <p className={styles.productCategory}>{product.category}</p>
                       <div className={styles.productPriceStock}>
                         <span className={styles.productPrice}>₱{product.price.toFixed(2)}</span>
-                        <span className={`${styles.productStock} ${product.stock < 10 ? styles.lowStock : ''}`}>
+                        <span className={`${styles.productStock} ${isLowStock(product.stock) ? styles.lowStock : ''}`}>
                           Stock: {product.stock}
                         </span>
                       </div>

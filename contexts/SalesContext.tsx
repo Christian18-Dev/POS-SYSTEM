@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { Product, useProducts } from './ProductContext'
 import { apiRequest } from '@/lib/api'
 import { useAuth } from './AuthContext'
+import { isLowStock } from '@/lib/stockAlerts'
+import { useToast } from '@/contexts/ToastContext'
 
 export interface CartItem {
   product: Product
@@ -42,6 +44,7 @@ const CART_STORAGE_KEY = 'pos_cart'
 
 function SalesProviderContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const toast = useToast()
   const [cart, setCart] = useState<CartItem[]>([])
   const [sales, setSales] = useState<Sale[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -145,6 +148,8 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
     }
 
     try {
+      const prevById = new Map(cart.map((i) => [i.product.id, i.product.stock]))
+
       // Prepare items for API
       const items = cart.map((item) => ({
         productId: item.product.id,
@@ -163,7 +168,24 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
 
       if (data.success) {
         // Refresh products to get updated stock
-        await refreshProducts()
+        const refreshedProducts = await refreshProducts()
+
+        // Optional low-stock toast: only when a product crosses into low stock
+        const newlyLow = refreshedProducts.filter((p) => {
+          const prevStock = prevById.get(p.id)
+          if (prevStock === undefined) return false
+          return !isLowStock(prevStock) && isLowStock(p.stock)
+        })
+
+        if (newlyLow.length > 0) {
+          newlyLow.slice(0, 3).forEach((p) => {
+            toast.info(`${p.name} has only ${p.stock} left`, { title: 'LOW STOCK' })
+          })
+          if (newlyLow.length > 3) {
+            toast.info(`${newlyLow.length - 3} more products are low on stock`, { title: 'LOW STOCK' })
+          }
+        }
+
         // Refresh sales to get the new sale
         await fetchSales()
         // Clear cart
