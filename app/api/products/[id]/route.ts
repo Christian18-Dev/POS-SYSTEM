@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Product from '@/models/Product'
-import { requireAuth } from '@/lib/auth'
+import { requireAdmin, requireAuth } from '@/lib/auth'
 import { sanitizeString, validatePrice, validateStock } from '@/lib/validation'
 import { handleApiError } from '@/lib/apiErrorHandler'
 import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
@@ -58,7 +58,7 @@ export async function PUT(
       return rateLimitResponse
     }
 
-    await requireAuth(request)
+    await requireAdmin(request)
     await connectDB()
 
     const { id } = await params
@@ -155,7 +155,7 @@ export async function DELETE(
       return rateLimitResponse
     }
 
-    await requireAuth(request)
+    await requireAdmin(request)
     await connectDB()
 
     const { id } = await params

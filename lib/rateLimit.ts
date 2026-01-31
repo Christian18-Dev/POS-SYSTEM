@@ -96,9 +96,12 @@ export function rateLimit(options: RateLimitOptions) {
 }
 
 // Pre-configured rate limiters for common use cases
-// Login rate limit: 5 attempts per 15 minutes (configurable via env)
-const LOGIN_RATE_LIMIT_WINDOW = parseInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || '900000') // 15 minutes default
-const LOGIN_RATE_LIMIT_MAX = parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '5') // 5 attempts default
+// Login rate limit: 5 attempts per 5 minutes (configurable via env)
+const LOGIN_RATE_LIMIT_WINDOW = parseInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || '300000') // 5 minutes default
+const LOGIN_RATE_LIMIT_MAX = parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '10') // 5 attempts default
+
+const STRICT_RATE_LIMIT_WINDOW = parseInt(process.env.STRICT_RATE_LIMIT_WINDOW_MS || '3600000') // 1 hour default
+const STRICT_RATE_LIMIT_MAX = parseInt(process.env.STRICT_RATE_LIMIT_MAX || '200') // 200 requests default
 
 export const loginRateLimit = rateLimit({
   windowMs: LOGIN_RATE_LIMIT_WINDOW,
@@ -113,7 +116,7 @@ export const apiRateLimit = rateLimit({
 })
 
 export const strictRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 10, // 10 requests per hour
+  windowMs: STRICT_RATE_LIMIT_WINDOW,
+  maxRequests: STRICT_RATE_LIMIT_MAX,
   message: 'Rate limit exceeded. Please try again later.',
 })

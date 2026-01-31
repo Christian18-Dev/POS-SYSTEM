@@ -5,7 +5,7 @@ import Product from '@/models/Product'
 import { requireAuth } from '@/lib/auth'
 import { handleApiError } from '@/lib/apiErrorHandler'
 import mongoose from 'mongoose'
-import { randomUUID } from 'crypto'
+import Counter from '@/models/Counter'
 import { sanitizeRegexInput, sanitizeString } from '@/lib/validation'
 import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
 
@@ -181,8 +181,20 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Generate order ID (lower collision risk than timestamp-based IDs)
-      const orderId = `ORD-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`
+      const now = new Date()
+      const yyyy = String(now.getFullYear())
+      const mm = String(now.getMonth() + 1).padStart(2, '0')
+      const dd = String(now.getDate()).padStart(2, '0')
+      const dateKey = `${yyyy}${mm}${dd}`
+
+      const counterKey = `sales:${dateKey}`
+      const counterDoc = await Counter.findOneAndUpdate(
+        { key: counterKey },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true, session }
+      )
+
+      const orderId = `FBT-${dateKey}-${String(counterDoc.seq).padStart(6, '0')}`
 
       // Create sale inside the transaction
       const [sale] = await Sale.create(

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Product } from '@/contexts/ProductContext'
 import { useToast } from '@/contexts/ToastContext'
+import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './products.module.css'
@@ -22,6 +23,7 @@ export default function ProductsPage() {
 
 function ProductsContent() {
   const toast = useToast()
+  const { isAdmin } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
@@ -65,6 +67,10 @@ function ProductsContent() {
   }, [page])
 
   const handleOpenModal = (product?: Product) => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
     if (product) {
       setEditingProduct(product)
       setFormData({
@@ -104,6 +110,11 @@ function ProductsContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
     
     const productData = {
       name: formData.name,
@@ -135,6 +146,10 @@ function ProductsContent() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
     if (confirm('Are you sure you want to delete this product?')) {
       try {
         await apiRequest<{ success: boolean }>(`/api/products/${id}`, { method: 'DELETE' })
@@ -164,12 +179,14 @@ function ProductsContent() {
             <h1 className={styles.headerTitle}>Products</h1>
             <p className={styles.headerSubtitle}>Manage your product inventory</p>
           </div>
-          <button onClick={() => handleOpenModal()} className={styles.addButton}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Add Product
-          </button>
+          {isAdmin && (
+            <button onClick={() => handleOpenModal()} className={styles.addButton}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Add Product
+            </button>
+          )}
         </div>
       </header>
 
@@ -189,24 +206,28 @@ function ProductsContent() {
                       <p className={styles.productSku}>SKU: {product.sku}</p>
                     </div>
                     <div className={styles.productActions}>
-                      <button
-                        onClick={() => handleOpenModal(product)}
-                        className={styles.editButton}
-                        aria-label="Edit product"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11.5 4.5L15.5 8.5M3 17H7L15.5 8.5L11.5 4.5L3 13V17H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className={styles.deleteButton}
-                        aria-label="Delete product"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 7.5H15M8.33333 10.8333V14.1667M11.6667 10.8333V14.1667M4.16667 7.5L4.99917 15.8333C4.99917 16.2754 5.17476 16.6993 5.48732 17.0118C5.79988 17.3244 6.22381 17.5 6.66584 17.5H13.3325C13.7745 17.5 14.1985 17.3244 14.511 17.0118C14.8236 16.6993 14.9992 16.2754 14.9992 15.8333L15.8333 7.5M7.5 7.5V5.83333C7.5 5.39131 7.67559 4.96738 7.98815 4.65482C8.30071 4.34226 8.72464 4.16667 9.16667 4.16667H10.8333C11.2754 4.16667 11.6993 4.34226 12.0118 4.65482C12.3244 4.96738 12.5 5.39131 12.5 5.83333V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleOpenModal(product)}
+                            className={styles.editButton}
+                            aria-label="Edit product"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M11.5 4.5L15.5 8.5M3 17H7L15.5 8.5L11.5 4.5L3 13V17H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className={styles.deleteButton}
+                            aria-label="Delete product"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 7.5H15M8.33333 10.8333V14.1667M11.6667 10.8333V14.1667M4.16667 7.5L4.99917 15.8333C4.99917 16.2754 5.17476 16.6993 5.48732 17.0118C5.79988 17.3244 6.22381 17.5 6.66584 17.5H13.3325C13.7745 17.5 14.1985 17.3244 14.511 17.0118C14.8236 16.6993 14.9992 16.2754 14.9992 15.8333L15.8333 7.5M7.5 7.5V5.83333C7.5 5.39131 7.67559 4.96738 7.98815 4.65482C8.30071 4.34226 8.72464 4.16667 9.16667 4.16667H10.8333C11.2754 4.16667 11.6993 4.34226 12.0118 4.65482C12.3244 4.96738 12.5 5.39131 12.5 5.83333V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <p className={styles.productDescription}>{product.description}</p>
@@ -263,9 +284,11 @@ function ProductsContent() {
             </svg>
             <h3>No products yet</h3>
             <p>Get started by adding your first product</p>
-            <button onClick={() => handleOpenModal()} className={styles.addButton}>
-              Add Product
-            </button>
+            {isAdmin && (
+              <button onClick={() => handleOpenModal()} className={styles.addButton}>
+                Add Product
+              </button>
+            )}
           </div>
         )}
       </main>

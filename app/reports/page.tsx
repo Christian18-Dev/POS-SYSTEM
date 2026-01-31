@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useSales, Sale } from '@/contexts/SalesContext'
 import { useProducts } from '@/contexts/ProductContext'
 import {
@@ -15,6 +16,8 @@ import {
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './reports.module.css'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function ReportsPage() {
   return (
@@ -27,11 +30,23 @@ export default function ReportsPage() {
 }
 
 function ReportsContent() {
+  const { isAdmin, isLoading } = useAuth()
+  const router = useRouter()
   const { sales, getSalesByDateRange } = useSales()
   const { products } = useProducts()
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('month')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
+
+  useEffect(() => {
+    if (!isLoading && !isAdmin) {
+      router.push('/dashboard')
+    }
+  }, [isAdmin, isLoading, router])
+
+  if (!isAdmin) {
+    return null
+  }
 
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {

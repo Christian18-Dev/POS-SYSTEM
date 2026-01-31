@@ -28,7 +28,7 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
 function ProductProviderContent({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, isAdmin } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -63,6 +63,9 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
   }, [isAuthenticated, authLoading, fetchProducts])
 
   const addProduct = async (productData: Omit<Product, 'id'>) => {
+    if (!isAdmin) {
+      throw new Error('Forbidden: Admin access required.')
+    }
     try {
       const data = await apiRequest<{ success: boolean; product: Product }>('/api/products', {
         method: 'POST',
@@ -78,6 +81,9 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
   }
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
+    if (!isAdmin) {
+      throw new Error('Forbidden: Admin access required.')
+    }
     try {
       const data = await apiRequest<{ success: boolean; product: Product }>(`/api/products/${id}`, {
         method: 'PUT',
@@ -95,6 +101,9 @@ function ProductProviderContent({ children }: { children: ReactNode }) {
   }
 
   const deleteProduct = async (id: string) => {
+    if (!isAdmin) {
+      throw new Error('Forbidden: Admin access required.')
+    }
     try {
       const data = await apiRequest<{ success: boolean }>(`/api/products/${id}`, {
         method: 'DELETE',

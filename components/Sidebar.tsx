@@ -14,7 +14,7 @@ export default function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { href: '/sales', label: 'Sales', icon: 'sales' },
     { href: '/orders', label: 'Orders', icon: 'orders' },
-    { href: '/reports', label: 'Reports', icon: 'reports' },
+    ...(isAdmin ? [{ href: '/reports', label: 'Reports', icon: 'reports' }] : []),
     { href: '/products', label: 'Products', icon: 'products' },
     ...(isAdmin ? [{ href: '/users', label: 'User Management', icon: 'users' }] : []),
   ]

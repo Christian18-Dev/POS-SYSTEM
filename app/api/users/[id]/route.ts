@@ -88,6 +88,21 @@ export async function PUT(
       if (!['admin', 'staff'].includes(role)) {
         return NextResponse.json({ error: 'Invalid role. Must be admin or staff' }, { status: 400 })
       }
+
+      if (role === 'admin' && user.role !== 'admin') {
+        const existingAdmin = await User.findOne({ role: 'admin' }).select('_id')
+        if (existingAdmin) {
+          return NextResponse.json({ error: 'Admin user already exists' }, { status: 400 })
+        }
+      }
+
+      if (role === 'staff' && user.role === 'admin') {
+        const adminCount = await User.countDocuments({ role: 'admin' })
+        if (adminCount <= 1) {
+          return NextResponse.json({ error: 'Cannot remove the only admin user' }, { status: 400 })
+        }
+      }
+
       user.role = role
     }
     if (password !== undefined && password !== '') {

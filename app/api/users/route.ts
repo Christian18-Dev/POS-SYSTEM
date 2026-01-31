@@ -67,6 +67,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid role. Must be admin or staff' }, { status: 400 })
     }
 
+    if (role === 'admin') {
+      const existingAdmin = await User.findOne({ role: 'admin' }).select('_id')
+      if (existingAdmin) {
+        return NextResponse.json({ error: 'Admin user already exists' }, { status: 400 })
+      }
+    }
+
     // Sanitize inputs
     const sanitizedEmail = email.toLowerCase().trim()
     const sanitizedName = sanitizeString(name, 100)

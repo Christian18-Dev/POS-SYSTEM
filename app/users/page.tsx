@@ -293,10 +293,14 @@ function UsersContent() {
                   id="role"
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' })}
+                  disabled={!!editingUser && editingUser.role === 'admin'}
                   required
                 >
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
+                  {editingUser?.role === 'admin' ? (
+                    <option value="admin">Admin</option>
+                  ) : (
+                    <option value="staff">Staff</option>
+                  )}
                 </select>
               </div>
               <div className={styles.formActions}>
