@@ -181,10 +181,23 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      const businessTimeZone = process.env.BUSINESS_TIME_ZONE || 'Asia/Manila'
       const now = new Date()
-      const yyyy = String(now.getFullYear())
-      const mm = String(now.getMonth() + 1).padStart(2, '0')
-      const dd = String(now.getDate()).padStart(2, '0')
+      const dateParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: businessTimeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(now)
+
+      const yyyy = dateParts.find((p) => p.type === 'year')?.value
+      const mm = dateParts.find((p) => p.type === 'month')?.value
+      const dd = dateParts.find((p) => p.type === 'day')?.value
+
+      if (!yyyy || !mm || !dd) {
+        throw new Error('Failed to compute orderId date key')
+      }
+
       const dateKey = `${yyyy}${mm}${dd}`
 
       const counterKey = `sales:${dateKey}`
@@ -194,7 +207,7 @@ export async function POST(request: NextRequest) {
         { new: true, upsert: true, session }
       )
 
-      const orderId = `FBT-${dateKey}-${String(counterDoc.seq).padStart(6, '0')}`
+      const orderId = `FBT-${dateKey}-${String(counterDoc.seq).padStart(4, '0')}`
 
       // Create sale inside the transaction
       const [sale] = await Sale.create(
