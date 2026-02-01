@@ -8,6 +8,7 @@ import mongoose from 'mongoose'
 import Counter from '@/models/Counter'
 import { sanitizeRegexInput, sanitizeString } from '@/lib/validation'
 import { apiRateLimit, strictRateLimit } from '@/lib/rateLimit'
+import InventoryMovement from '@/models/InventoryMovement'
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse
     }
 
-    await requireAuth(request)
+    const authUser = await requireAuth(request)
     await connectDB()
 
     const body = await request.json()
@@ -126,6 +127,15 @@ export async function POST(request: NextRequest) {
 
     try {
       const saleItems: any[] = []
+      const movementDrafts: Array<{
+        product: any
+        type: 'SALE'
+        change: number
+        stockBefore: number
+        stockAfter: number
+        byUserId?: string
+        byEmail?: string
+      }> = []
       let total = 0
 
       for (const item of items) {
@@ -169,6 +179,19 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+
+        const stockAfter = updatedProduct.stock
+        const stockBefore = stockAfter + quantity
+
+        movementDrafts.push({
+          product: updatedProduct._id,
+          type: 'SALE',
+          change: -quantity,
+          stockBefore,
+          stockAfter,
+          byUserId: authUser.userId,
+          byEmail: authUser.email,
+        })
 
         total += updatedProduct.price * quantity
 
@@ -223,6 +246,16 @@ export async function POST(request: NextRequest) {
         ],
         { session }
       )
+
+      if (movementDrafts.length > 0) {
+        await InventoryMovement.create(
+          movementDrafts.map((m) => ({
+            ...m,
+            note: `Order ${orderId}`,
+          })),
+          { session }
+        )
+      }
 
       await session.commitTransaction()
 

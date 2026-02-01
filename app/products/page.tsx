@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Product } from '@/contexts/ProductContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useProducts } from '@/contexts/ProductContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import styles from './products.module.css'
@@ -25,17 +26,23 @@ export default function ProductsPage() {
 function ProductsContent() {
   const toast = useToast()
   const { isAdmin } = useAuth()
+  const { refreshProducts } = useProducts()
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
   const [isFetching, setIsFetching] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null)
+  const [actionModal, setActionModal] = useState<null | 'restock' | 'adjust' | 'delete'>(null)
+  const [actionProduct, setActionProduct] = useState<Product | null>(null)
+  const [isActionSubmitting, setIsActionSubmitting] = useState(false)
+  const [restockForm, setRestockForm] = useState({ quantity: '1', note: '' })
+  const [adjustForm, setAdjustForm] = useState({ newStock: '', note: '' })
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
-    stock: '',
     category: '',
     sku: '',
   })
@@ -62,10 +69,139 @@ function ProductsContent() {
     }
   }
 
+  const openRestockModal = (product: Product) => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
+    setOpenMenuProductId(null)
+    setActionProduct(product)
+    setRestockForm({ quantity: '1', note: '' })
+    setActionModal('restock')
+  }
+
+  const openAdjustModal = (product: Product) => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
+    setOpenMenuProductId(null)
+    setActionProduct(product)
+    setAdjustForm({ newStock: String(product.stock), note: '' })
+    setActionModal('adjust')
+  }
+
+  const openDeleteModal = (product: Product) => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
+    setOpenMenuProductId(null)
+    setActionProduct(product)
+    setActionModal('delete')
+  }
+
+  const closeActionModal = () => {
+    if (isActionSubmitting) return
+    setActionModal(null)
+    setActionProduct(null)
+    setRestockForm({ quantity: '1', note: '' })
+    setAdjustForm({ newStock: '', note: '' })
+  }
+
+  const submitRestock = async () => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
+    if (!actionProduct) return
+
+    const quantity = parseInt(restockForm.quantity, 10)
+    if (isNaN(quantity) || quantity <= 0 || quantity > 999999) {
+      toast.error('Invalid quantity')
+      return
+    }
+
+    try {
+      setIsActionSubmitting(true)
+      await apiRequest<{ success: boolean; product: Product }>(`/api/products/${actionProduct.id}/restock`, {
+        method: 'POST',
+        body: JSON.stringify({ quantity, note: restockForm.note }),
+      })
+
+      toast.success('Restock recorded')
+      closeActionModal()
+      await fetchProducts(page)
+      await refreshProducts()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to restock')
+    } finally {
+      setIsActionSubmitting(false)
+    }
+  }
+
+  const submitAdjust = async () => {
+    if (!isAdmin) {
+      toast.error('Forbidden: Admin access required.')
+      return
+    }
+    if (!actionProduct) return
+
+    const newStock = parseInt(adjustForm.newStock, 10)
+    if (isNaN(newStock) || newStock < 0 || newStock > 999999) {
+      toast.error('Invalid stock')
+      return
+    }
+    if (!adjustForm.note.trim()) {
+      toast.error('Reason is required')
+      return
+    }
+
+    try {
+      setIsActionSubmitting(true)
+      await apiRequest<{ success: boolean; product: Product }>(`/api/products/${actionProduct.id}/adjust`, {
+        method: 'POST',
+        body: JSON.stringify({ newStock, note: adjustForm.note }),
+      })
+
+      toast.success('Stock adjusted')
+      closeActionModal()
+      await fetchProducts(page)
+      await refreshProducts()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to adjust stock')
+    } finally {
+      setIsActionSubmitting(false)
+    }
+  }
+
   useEffect(() => {
     fetchProducts(page)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
+
+  useEffect(() => {
+    if (!openMenuProductId) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenMenuProductId(null)
+    }
+
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+
+      const menuRoot = target.closest(`[data-menu-root="${openMenuProductId}"]`)
+      if (!menuRoot) setOpenMenuProductId(null)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [openMenuProductId])
 
   const handleOpenModal = (product?: Product) => {
     if (!isAdmin) {
@@ -78,7 +214,6 @@ function ProductsContent() {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
-        stock: product.stock.toString(),
         category: product.category,
         sku: product.sku,
       })
@@ -88,7 +223,6 @@ function ProductsContent() {
         name: '',
         description: '',
         price: '',
-        stock: '',
         category: '',
         sku: '',
       })
@@ -103,7 +237,6 @@ function ProductsContent() {
       name: '',
       description: '',
       price: '',
-      stock: '',
       category: '',
       sku: '',
     })
@@ -121,7 +254,6 @@ function ProductsContent() {
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
-      stock: parseInt(formData.stock),
       category: formData.category,
       sku: formData.sku,
     }
@@ -135,12 +267,13 @@ function ProductsContent() {
       } else {
         await apiRequest<{ success: boolean; product: Product }>('/api/products', {
           method: 'POST',
-          body: JSON.stringify(productData),
+          body: JSON.stringify({ ...productData, stock: 0 }),
         })
       }
       handleCloseModal()
       toast.success(editingProduct ? 'Product updated' : 'Product created')
       await fetchProducts(page)
+      await refreshProducts()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
@@ -151,19 +284,17 @@ function ProductsContent() {
       toast.error('Forbidden: Admin access required.')
       return
     }
-    if (confirm('Are you sure you want to delete this product?')) {
-      try {
-        await apiRequest<{ success: boolean }>(`/api/products/${id}`, { method: 'DELETE' })
-        toast.success('Product deleted')
-        // If we deleted the last item on the page, go back a page when possible
-        const remaining = products.length - 1
-        const nextPage =
-          remaining <= 0 && page > 1 ? page - 1 : page
-        if (nextPage !== page) setPage(nextPage)
-        else await fetchProducts(page)
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'An error occurred')
-      }
+    try {
+      await apiRequest<{ success: boolean }>(`/api/products/${id}`, { method: 'DELETE' })
+      toast.success('Product deleted')
+      // If we deleted the last item on the page, go back a page when possible
+      const remaining = products.length - 1
+      const nextPage = remaining <= 0 && page > 1 ? page - 1 : page
+      if (nextPage !== page) setPage(nextPage)
+      else await fetchProducts(page)
+      await refreshProducts()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
@@ -211,26 +342,65 @@ function ProductsContent() {
                         <span className={styles.lowStockBadge}>LOW STOCK</span>
                       )}
                       {isAdmin && (
-                        <>
+                        <div className={styles.menuRoot} data-menu-root={product.id}>
                           <button
-                            onClick={() => handleOpenModal(product)}
-                            className={styles.editButton}
-                            aria-label="Edit product"
+                            type="button"
+                            className={styles.menuButton}
+                            aria-label="Open product actions"
+                            aria-haspopup="menu"
+                            aria-expanded={openMenuProductId === product.id}
+                            onClick={() =>
+                              setOpenMenuProductId((prev) => (prev === product.id ? null : product.id))
+                            }
                           >
-                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M11.5 4.5L15.5 8.5M3 17H7L15.5 8.5L11.5 4.5L3 13V17H7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="10" cy="4" r="1.6" fill="currentColor" />
+                              <circle cx="10" cy="10" r="1.6" fill="currentColor" />
+                              <circle cx="10" cy="16" r="1.6" fill="currentColor" />
                             </svg>
                           </button>
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className={styles.deleteButton}
-                            aria-label="Delete product"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 7.5H15M8.33333 10.8333V14.1667M11.6667 10.8333V14.1667M4.16667 7.5L4.99917 15.8333C4.99917 16.2754 5.17476 16.6993 5.48732 17.0118C5.79988 17.3244 6.22381 17.5 6.66584 17.5H13.3325C13.7745 17.5 14.1985 17.3244 14.511 17.0118C14.8236 16.6993 14.9992 16.2754 14.9992 15.8333L15.8333 7.5M7.5 7.5V5.83333C7.5 5.39131 7.67559 4.96738 7.98815 4.65482C8.30071 4.34226 8.72464 4.16667 9.16667 4.16667H10.8333C11.2754 4.16667 11.6993 4.34226 12.0118 4.65482C12.3244 4.96738 12.5 5.39131 12.5 5.83333V7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </button>
-                        </>
+
+                          {openMenuProductId === product.id && (
+                            <div className={styles.menuDropdown} role="menu" aria-label="Product actions">
+                              <button
+                                type="button"
+                                className={styles.menuItem}
+                                role="menuitem"
+                                onClick={() => openRestockModal(product)}
+                              >
+                                Restock
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.menuItem}
+                                role="menuitem"
+                                onClick={() => openAdjustModal(product)}
+                              >
+                                Edit Stock
+                              </button>
+                              <div className={styles.menuDivider} />
+                              <button
+                                type="button"
+                                className={styles.menuItem}
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenMenuProductId(null)
+                                  handleOpenModal(product)
+                                }}
+                              >
+                                Edit Product
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.menuItem} ${styles.menuDanger}`}
+                                role="menuitem"
+                                onClick={() => openDeleteModal(product)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -351,17 +521,6 @@ function ProductsContent() {
                     required
                   />
                 </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="stock">Stock *</label>
-                  <input
-                    id="stock"
-                    type="number"
-                    min="0"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    required
-                  />
-                </div>
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="category">Category *</label>
@@ -382,6 +541,155 @@ function ProductsContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {actionModal && actionProduct && (
+        <div className={styles.modalOverlay} onClick={closeActionModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>
+                {actionModal === 'restock'
+                  ? `Restock: ${actionProduct.name}`
+                  : actionModal === 'adjust'
+                    ? `Edit Stock: ${actionProduct.name}`
+                    : `Delete: ${actionProduct.name}`}
+              </h2>
+              <button onClick={closeActionModal} className={styles.closeButton}>
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            {actionModal === 'restock' && (
+              <form
+                className={styles.form}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void submitRestock()
+                }}
+              >
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="restock-qty">Quantity *</label>
+                    <input
+                      id="restock-qty"
+                      type="number"
+                      min="1"
+                      value={restockForm.quantity}
+                      onChange={(e) => setRestockForm((p) => ({ ...p, quantity: e.target.value }))}
+                      required
+                      disabled={isActionSubmitting}
+                    />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="restock-note">Note (optional)</label>
+                  <textarea
+                    id="restock-note"
+                    rows={3}
+                    value={restockForm.note}
+                    onChange={(e) => setRestockForm((p) => ({ ...p, note: e.target.value }))}
+                    disabled={isActionSubmitting}
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <button type="button" onClick={closeActionModal} className={styles.cancelButton} disabled={isActionSubmitting}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.submitButton} disabled={isActionSubmitting}>
+                    {isActionSubmitting ? 'Saving...' : 'Restock'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {actionModal === 'adjust' && (
+              <form
+                className={styles.form}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void submitAdjust()
+                }}
+              >
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="adjust-new">New Stock *</label>
+                    <input
+                      id="adjust-new"
+                      type="number"
+                      min="0"
+                      value={adjustForm.newStock}
+                      onChange={(e) => setAdjustForm((p) => ({ ...p, newStock: e.target.value }))}
+                      required
+                      disabled={isActionSubmitting}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Current</label>
+                    <input type="text" value={`${actionProduct.stock} units`} disabled />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="adjust-note">Reason *</label>
+                  <textarea
+                    id="adjust-note"
+                    rows={3}
+                    value={adjustForm.note}
+                    onChange={(e) => setAdjustForm((p) => ({ ...p, note: e.target.value }))}
+                    required
+                    disabled={isActionSubmitting}
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <button type="button" onClick={closeActionModal} className={styles.cancelButton} disabled={isActionSubmitting}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.submitButton} disabled={isActionSubmitting}>
+                    {isActionSubmitting ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {actionModal === 'delete' && (
+              <form
+                className={styles.form}
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!isAdmin) {
+                    toast.error('Forbidden: Admin access required.')
+                    return
+                  }
+                  try {
+                    setIsActionSubmitting(true)
+                    await handleDelete(actionProduct.id)
+                    closeActionModal()
+                  } finally {
+                    setIsActionSubmitting(false)
+                  }
+                }}
+              >
+                <div className={styles.formGroup}>
+                  <label>Confirmation</label>
+                  <textarea
+                    rows={3}
+                    value={`This will permanently delete ${actionProduct.name}. This cannot be undone.`}
+                    disabled
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <button type="button" onClick={closeActionModal} className={styles.cancelButton} disabled={isActionSubmitting}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.dangerButton} disabled={isActionSubmitting}>
+                    {isActionSubmitting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

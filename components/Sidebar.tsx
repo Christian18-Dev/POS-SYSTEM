@@ -14,6 +14,7 @@ export default function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { href: '/sales', label: 'Sales', icon: 'sales' },
     { href: '/orders', label: 'Orders', icon: 'orders' },
+    { href: '/inventory', label: 'Inventory', icon: 'inventory' },
     ...(isAdmin ? [{ href: '/reports', label: 'Reports', icon: 'reports' }] : []),
     { href: '/products', label: 'Products', icon: 'products' },
     ...(isAdmin ? [{ href: '/users', label: 'User Management', icon: 'users' }] : []),
@@ -61,6 +62,14 @@ export default function Sidebar() {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 4H16C16.5523 4 17 4.44772 17 5V15C17 15.5523 16.5523 16 16 16H4C3.44772 16 3 15.5523 3 15V5C3 4.44772 3.44772 4 4 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M13 16V12C13 11.4477 12.5523 11 12 11H8C7.44772 11 7 11.4477 7 12V16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {item.icon === 'inventory' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 7V5C6 3.89543 6.89543 3 8 3H16C17.1046 3 18 3.89543 18 5V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 12H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M8 16H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             )}
             {item.icon === 'users' && (

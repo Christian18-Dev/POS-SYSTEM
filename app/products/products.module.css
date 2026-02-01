@@ -101,21 +101,86 @@
 .productActions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
- .lowStockBadge {
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
-   padding: 0.25rem 0.5rem;
-   border-radius: 9999px;
-   background: #ef4444;
-   color: white;
-   font-size: 0.6875rem;
-   font-weight: 800;
-   letter-spacing: 0.04em;
-   text-transform: uppercase;
- }
+.lowStockBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.menuRoot {
+  position: relative;
+}
+
+.menuButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #475569;
+}
+
+.menuButton:hover {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: #cbd5e1;
+}
+
+.menuDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+  padding: 0.4rem;
+  z-index: 20;
+}
+
+.menuItem {
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.menuItem:hover {
+  background: #f8fafc;
+}
+
+.menuDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0.35rem 0.25rem;
+}
+
+.menuDanger {
+  color: #ef4444;
+}
+
+.menuDanger:hover {
+  background: #fef2f2;
+}
 
 .editButton,
 .deleteButton {
@@ -130,6 +195,44 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
+ .restockButton {
+   width: 32px;
+   height: 32px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border: 1px solid #e2e8f0;
+   border-radius: 0.5rem;
+   background: white;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   color: #2563eb;
+ }
+
+ .restockButton:hover {
+   background: rgba(37, 99, 235, 0.08);
+   border-color: #2563eb;
+ }
+
+ .adjustButton {
+   width: 32px;
+   height: 32px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border: 1px solid #e2e8f0;
+   border-radius: 0.5rem;
+   background: white;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   color: #9333ea;
+ }
+
+ .adjustButton:hover {
+   background: rgba(147, 51, 234, 0.08);
+   border-color: #9333ea;
+ }
 
 .editButton {
   color: var(--primary-color);
@@ -399,6 +502,29 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(31, 110, 61, 0.25);
 }
+
+ .dangerButton {
+   padding: 0.625rem 1.25rem;
+   border: none;
+   border-radius: 0.5rem;
+   background: #ef4444;
+   color: white;
+   font-size: 0.9375rem;
+   font-weight: 700;
+   cursor: pointer;
+   transition: all 0.2s ease;
+ }
+
+ .dangerButton:hover:not(:disabled) {
+   transform: translateY(-1px);
+   box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
+   background: #dc2626;
+ }
+
+ .dangerButton:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+ }
 
 @media (max-width: 768px) {
   .header {
