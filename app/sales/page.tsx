@@ -37,6 +37,7 @@ function SalesContent() {
 
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash')
+  const [customerType, setCustomerType] = useState<'regular' | 'senior'>('regular')
   const [isProcessing, setIsProcessing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [completedSale, setCompletedSale] = useState<Sale | null>(null)
@@ -64,11 +65,12 @@ function SalesContent() {
 
     setIsProcessing(true)
     try {
-      const sale = await checkout(customerName || undefined, paymentMethod)
+      const sale = await checkout(customerName || undefined, paymentMethod, customerType)
       setCompletedSale(sale)
       setShowReceipt(true)
       setCustomerName('')
       setPaymentMethod('cash')
+      setCustomerType('regular')
       toast.success('Sale completed')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing sale. Please try again.'
@@ -259,6 +261,18 @@ function SalesContent() {
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
                         <option value="other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="customerType">Customer Type</label>
+                      <select
+                        id="customerType"
+                        value={customerType}
+                        onChange={(e) => setCustomerType(e.target.value as 'regular' | 'senior')}
+                      >
+                        <option value="regular">Regular</option>
+                        <option value="senior">Senior Citizen (20% Discount, VAT Exempt)</option>
                       </select>
                     </div>
 

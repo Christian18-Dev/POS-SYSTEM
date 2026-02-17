@@ -12,6 +12,14 @@ export interface ISale extends Document {
   orderId: string
   items: ICartItem[]
   total: number
+  customerType?: 'regular' | 'senior'
+  subtotal?: number
+  discountRate?: number
+  discountAmount?: number
+  vatRate?: number
+  vatAmount?: number
+  vatableSales?: number
+  vatExemptSales?: number
   customerName?: string
   paymentMethod: 'cash' | 'card' | 'other'
   status: 'completed' | 'pending' | 'cancelled'
@@ -63,6 +71,41 @@ const SaleSchema: Schema = new Schema(
     total: {
       type: Number,
       required: true,
+      min: 0,
+    },
+    customerType: {
+      type: String,
+      enum: ['regular', 'senior'],
+      default: 'regular',
+    },
+    subtotal: {
+      type: Number,
+      min: 0,
+    },
+    discountRate: {
+      type: Number,
+      min: 0,
+      max: 1,
+    },
+    discountAmount: {
+      type: Number,
+      min: 0,
+    },
+    vatRate: {
+      type: Number,
+      min: 0,
+      max: 1,
+    },
+    vatAmount: {
+      type: Number,
+      min: 0,
+    },
+    vatableSales: {
+      type: Number,
+      min: 0,
+    },
+    vatExemptSales: {
+      type: Number,
       min: 0,
     },
     customerName: {

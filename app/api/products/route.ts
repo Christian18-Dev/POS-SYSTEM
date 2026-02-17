@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
         name: product.name,
         description: product.description,
         price: product.price,
+        cost: (product as any).cost,
         stock: product.stock,
         category: product.category,
         sku: product.sku,
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     await connectDB()
 
     const body = await request.json()
-    const { name, description, price, stock, category, sku, image } = body
+    const { name, description, price, cost, stock, category, sku, image } = body
 
     // Validation
     if (!name || !price || stock === undefined || !category || !sku) {
@@ -112,6 +113,13 @@ export async function POST(request: NextRequest) {
     if (!validatePrice(price)) {
       return NextResponse.json(
         { error: 'Invalid price. Must be a number between 0 and 999999.99' },
+        { status: 400 }
+      )
+    }
+
+    if (cost !== undefined && !validatePrice(cost)) {
+      return NextResponse.json(
+        { error: 'Invalid cost. Must be a number between 0 and 999999.99' },
         { status: 400 }
       )
     }
@@ -136,6 +144,7 @@ export async function POST(request: NextRequest) {
       name: sanitizedName,
       description: sanitizedDescription,
       price: parseFloat(price),
+      cost: cost === undefined ? 0 : parseFloat(cost),
       stock: parseInt(stock),
       category: sanitizedCategory,
       sku: sanitizedSku,
@@ -151,6 +160,7 @@ export async function POST(request: NextRequest) {
         name: product.name,
         description: product.description,
         price: product.price,
+        cost: (product as any).cost,
         stock: product.stock,
         category: product.category,
         sku: product.sku,

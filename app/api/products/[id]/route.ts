@@ -37,6 +37,7 @@ export async function GET(
         name: product.name,
         description: product.description,
         price: product.price,
+        cost: (product as any).cost,
         stock: product.stock,
         category: product.category,
         sku: product.sku,
@@ -64,7 +65,7 @@ export async function PUT(
     const { id } = await params
 
     const body = await request.json()
-    const { name, description, price, stock, category, sku, image } = body
+    const { name, description, price, cost, stock, category, sku, image } = body
 
     const product = await Product.findById(id)
 
@@ -90,6 +91,16 @@ export async function PUT(
         )
       }
       product.price = parseFloat(price)
+    }
+
+    if (cost !== undefined) {
+      if (!validatePrice(cost)) {
+        return NextResponse.json(
+          { error: 'Invalid cost. Must be a number between 0 and 999999.99' },
+          { status: 400 }
+        )
+      }
+      ;(product as any).cost = parseFloat(cost)
     }
     if (stock !== undefined) {
       if (!validateStock(stock)) {
@@ -130,6 +141,7 @@ export async function PUT(
         name: product.name,
         description: product.description,
         price: product.price,
+        cost: (product as any).cost,
         stock: product.stock,
         category: product.category,
         sku: product.sku,

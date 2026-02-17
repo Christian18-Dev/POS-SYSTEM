@@ -43,6 +43,7 @@ function ProductsContent() {
     name: '',
     description: '',
     price: '',
+    cost: '',
     category: '',
     sku: '',
   })
@@ -214,6 +215,7 @@ function ProductsContent() {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
+        cost: product.cost !== undefined ? String(product.cost) : '',
         category: product.category,
         sku: product.sku,
       })
@@ -223,6 +225,7 @@ function ProductsContent() {
         name: '',
         description: '',
         price: '',
+        cost: '',
         category: '',
         sku: '',
       })
@@ -237,6 +240,7 @@ function ProductsContent() {
       name: '',
       description: '',
       price: '',
+      cost: '',
       category: '',
       sku: '',
     })
@@ -254,6 +258,7 @@ function ProductsContent() {
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
+      cost: formData.cost === '' ? 0 : parseFloat(formData.cost),
       category: formData.category,
       sku: formData.sku,
     }
@@ -519,6 +524,18 @@ function ProductsContent() {
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     required
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="cost">Cost</label>
+                  <input
+                    id="cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.cost}
+                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                   />
                 </div>
               </div>

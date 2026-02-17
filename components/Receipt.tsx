@@ -13,6 +13,8 @@ interface ReceiptProps {
 export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
 
+  const formatMoney = (n: number) => `₱${n.toFixed(2)}`
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -32,15 +34,76 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           <div class="item">
             <div class="itemHeader">
               <span class="itemName">${item.product.name}</span>
-              <span class="itemPrice">₱${lineTotal.toFixed(2)}</span>
+              <span class="itemPrice">${formatMoney(lineTotal)}</span>
             </div>
             <div class="itemDetails">
-              ${item.quantity} × ₱${item.product.price.toFixed(2)} • SKU: ${item.product.sku}
+              ${item.quantity} × ${formatMoney(item.product.price)} • SKU: ${item.product.sku}
             </div>
           </div>
         `
       })
       .join('')
+
+    const hasBreakdown =
+      typeof sale.subtotal === 'number' ||
+      typeof sale.discountAmount === 'number' ||
+      typeof sale.vatAmount === 'number' ||
+      typeof sale.vatableSales === 'number' ||
+      typeof sale.vatExemptSales === 'number'
+
+    const totalsHtml = hasBreakdown
+      ? `
+          ${typeof sale.subtotal === 'number'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">Subtotal:</span>
+            <span>${formatMoney(sale.subtotal)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof sale.vatableSales === 'number' && sale.customerType !== 'senior'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VATable Sales:</span>
+            <span>${formatMoney(sale.vatableSales)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof sale.vatAmount === 'number' && sale.customerType !== 'senior'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VAT (12%):</span>
+            <span>${formatMoney(sale.vatAmount)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof sale.vatExemptSales === 'number' && sale.customerType === 'senior'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VAT-Exempt Sales:</span>
+            <span>${formatMoney(sale.vatExemptSales)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof sale.discountAmount === 'number' && sale.discountAmount > 0
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">Senior Discount (20%):</span>
+            <span>- ${formatMoney(sale.discountAmount)}</span>
+          </div>
+          `
+            : ''}
+        `
+      : `
+          <div class="totalRow">
+            <span class="totalLabel">Subtotal:</span>
+            <span>${formatMoney(sale.total)}</span>
+          </div>
+        `
 
     return `
       <div class="receipt">
@@ -77,13 +140,10 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         </div>
 
         <div class="totals">
-          <div class="totalRow">
-            <span class="totalLabel">Subtotal:</span>
-            <span>₱${sale.total.toFixed(2)}</span>
-          </div>
+          ${totalsHtml}
           <div class="totalRow">
             <span class="totalLabel">Total:</span>
-            <span class="totalAmount">₱${sale.total.toFixed(2)}</span>
+            <span class="totalAmount">${formatMoney(sale.total)}</span>
           </div>
         </div>
       </div>
@@ -292,24 +352,55 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
               <div className={styles.itemHeader}>
                 <span className={styles.itemName}>{item.product.name}</span>
                 <span className={styles.itemPrice}>
-                  ₱{(item.product.price * item.quantity).toFixed(2)}
+                  {formatMoney(item.product.price * item.quantity)}
                 </span>
               </div>
               <div className={styles.itemDetails}>
-                {item.quantity} × ₱{item.product.price.toFixed(2)} • SKU: {item.product.sku}
+                {item.quantity} × {formatMoney(item.product.price)} • SKU: {item.product.sku}
               </div>
             </div>
           ))}
         </div>
 
         <div className={styles.totals}>
-          <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>Subtotal:</span>
-            <span>₱{sale.total.toFixed(2)}</span>
-          </div>
+          {typeof sale.subtotal === 'number' && (
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>Subtotal:</span>
+              <span>{formatMoney(sale.subtotal)}</span>
+            </div>
+          )}
+
+          {sale.customerType !== 'senior' && typeof sale.vatableSales === 'number' && (
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>VATable Sales:</span>
+              <span>{formatMoney(sale.vatableSales)}</span>
+            </div>
+          )}
+
+          {sale.customerType !== 'senior' && typeof sale.vatAmount === 'number' && (
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>VAT (12%):</span>
+              <span>{formatMoney(sale.vatAmount)}</span>
+            </div>
+          )}
+
+          {sale.customerType === 'senior' && typeof sale.vatExemptSales === 'number' && (
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>VAT-Exempt Sales:</span>
+              <span>{formatMoney(sale.vatExemptSales)}</span>
+            </div>
+          )}
+
+          {typeof sale.discountAmount === 'number' && sale.discountAmount > 0 && (
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>Senior Discount (20%):</span>
+              <span>- {formatMoney(sale.discountAmount)}</span>
+            </div>
+          )}
+
           <div className={styles.totalRow}>
             <span className={styles.totalLabel}>Total:</span>
-            <span className={styles.totalAmount}>₱{sale.total.toFixed(2)}</span>
+            <span className={styles.totalAmount}>{formatMoney(sale.total)}</span>
           </div>
         </div>
       </div>

@@ -16,6 +16,14 @@ export interface Sale {
   id: string
   items: CartItem[]
   total: number
+  customerType?: 'regular' | 'senior'
+  subtotal?: number
+  discountRate?: number
+  discountAmount?: number
+  vatRate?: number
+  vatAmount?: number
+  vatableSales?: number
+  vatExemptSales?: number
   customerName?: string
   paymentMethod: 'cash' | 'card' | 'other'
   timestamp: string
@@ -31,7 +39,11 @@ interface SalesContextType {
   updateCartQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   getCartTotal: () => number
-  checkout: (customerName?: string, paymentMethod?: 'cash' | 'card' | 'other') => Promise<Sale>
+  checkout: (
+    customerName?: string,
+    paymentMethod?: 'cash' | 'card' | 'other',
+    customerType?: 'regular' | 'senior'
+  ) => Promise<Sale>
   getSalesByDateRange: (startDate: Date, endDate: Date) => Sale[]
   getTotalSales: () => number
   getTotalOrders: () => number
@@ -141,7 +153,8 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
 
   const checkout = async (
     customerName?: string,
-    paymentMethod: 'cash' | 'card' | 'other' = 'cash'
+    paymentMethod: 'cash' | 'card' | 'other' = 'cash',
+    customerType: 'regular' | 'senior' = 'regular'
   ): Promise<Sale> => {
     if (cart.length === 0) {
       throw new Error('Cart is empty')
@@ -163,6 +176,7 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
           items,
           customerName,
           paymentMethod,
+          customerType,
         }),
       })
 
