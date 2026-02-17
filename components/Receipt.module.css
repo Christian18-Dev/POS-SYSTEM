@@ -23,6 +23,16 @@
   padding-bottom: 1rem;
 }
 
+.storeLogo {
+  display: block;
+  max-width: 120px;
+  width: 100%;
+  max-height: 60px;
+  height: auto;
+  margin: 0 auto 0.75rem;
+  object-fit: contain;
+}
+
 .storeName {
   font-size: 18px;
   font-weight: bold;
@@ -44,12 +54,18 @@
 .infoRow {
   display: flex;
   justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
 .label {
   font-weight: bold;
   color: #1e293b;
+}
+
+.value {
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .items {

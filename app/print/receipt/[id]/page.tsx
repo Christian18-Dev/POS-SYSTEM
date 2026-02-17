@@ -41,9 +41,6 @@ function PrintReceiptContent({ id }: { id: string }) {
               <span class="itemName">${item.product.name}</span>
               <span class="itemPrice">₱${lineTotal.toFixed(2)}</span>
             </div>
-            <div class="itemDetails">
-              ${item.quantity} × ₱${item.product.price.toFixed(2)} • SKU: ${item.product.sku}
-            </div>
           </div>
         `
       })
@@ -52,7 +49,7 @@ function PrintReceiptContent({ id }: { id: string }) {
     return `
       <div class="receipt">
         <div class="header">
-          <div class="storeName">POS SYSTEM</div>
+          <img class="storeLogo" src="/FarmaciaLogo.png" alt="Farmacia Logo" />
           <div class="storeInfo">
             <div>123 Business Street</div>
             <div>City, Country 12345</div>
@@ -63,19 +60,19 @@ function PrintReceiptContent({ id }: { id: string }) {
         <div class="orderInfo">
           <div class="infoRow">
             <span class="label">Order ID:</span>
-            <span>${s.id}</span>
+            <span class="value">${s.id}</span>
           </div>
           <div class="infoRow">
             <span class="label">Date:</span>
-            <span>${formatDate(s.timestamp)}</span>
+            <span class="value">${formatDate(s.timestamp)}</span>
           </div>
           <div class="infoRow">
             <span class="label">Customer:</span>
-            <span>${s.customerName || 'Walk-in'}</span>
+            <span class="value">${s.customerName || 'Walk-in'}</span>
           </div>
           <div class="infoRow">
             <span class="label">Payment:</span>
-            <span>${s.paymentMethod.toUpperCase()}</span>
+            <span class="value">${s.paymentMethod.toUpperCase()}</span>
           </div>
         </div>
 
@@ -281,6 +278,16 @@ function PrintReceiptContent({ id }: { id: string }) {
           margin-bottom: 4px;
         }
 
+        .storeLogo {
+          display: block;
+          max-width: 120px;
+          width: 100%;
+          max-height: 60px;
+          height: auto;
+          margin: 0 auto 8px;
+          object-fit: contain;
+        }
+
         .storeInfo {
           font-size: 10px;
           color: #475569;
@@ -303,6 +310,11 @@ function PrintReceiptContent({ id }: { id: string }) {
           font-weight: 700;
           color: #0f172a;
           white-space: nowrap;
+        }
+
+        .value {
+          text-align: right;
+          overflow-wrap: anywhere;
         }
 
         .items {

@@ -36,9 +36,6 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
               <span class="itemName">${item.product.name}</span>
               <span class="itemPrice">${formatMoney(lineTotal)}</span>
             </div>
-            <div class="itemDetails">
-              ${item.quantity} × ${formatMoney(item.product.price)} • SKU: ${item.product.sku}
-            </div>
           </div>
         `
       })
@@ -108,7 +105,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
     return `
       <div class="receipt">
         <div class="header">
-          <div class="storeName">POS SYSTEM</div>
+          <img class="storeLogo" src="/FarmaciaLogo.png" alt="Farmacia Logo" />
           <div class="storeInfo">
             <div>123 Business Street</div>
             <div>City, Country 12345</div>
@@ -119,19 +116,19 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         <div class="orderInfo">
           <div class="infoRow">
             <span class="label">Order ID:</span>
-            <span>${sale.id}</span>
+            <span class="value">${sale.id}</span>
           </div>
           <div class="infoRow">
             <span class="label">Date:</span>
-            <span>${formatDate(sale.timestamp)}</span>
+            <span class="value">${formatDate(sale.timestamp)}</span>
           </div>
           <div class="infoRow">
             <span class="label">Customer:</span>
-            <span>${sale.customerName || 'Walk-in'}</span>
+            <span class="value">${sale.customerName || 'Walk-in'}</span>
           </div>
           <div class="infoRow">
             <span class="label">Payment:</span>
-            <span>${sale.paymentMethod.toUpperCase()}</span>
+            <span class="value">${sale.paymentMethod.toUpperCase()}</span>
           </div>
         </div>
 
@@ -185,6 +182,16 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         letter-spacing: 0.4px;
         margin-bottom: 4px;
       }
+
+      .storeLogo {
+        display: block;
+        max-width: 120px;
+        width: 100%;
+        max-height: 60px;
+        height: auto;
+        margin: 0 auto 8px;
+        object-fit: contain;
+      }
       .storeInfo {
         font-size: 10px;
         color: #475569;
@@ -204,6 +211,11 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         font-weight: 700;
         color: #0f172a;
         white-space: nowrap;
+      }
+
+      .value {
+        text-align: right;
+        overflow-wrap: anywhere;
       }
       .items {
         margin: 10px 0 12px;
@@ -319,7 +331,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
     <div className={styles.receiptContainer}>
       <div ref={receiptRef} className={styles.receipt}>
         <div className={styles.header}>
-          <div className={styles.storeName}>POS SYSTEM</div>
+          <img className={styles.storeLogo} src="/FarmaciaLogo.png" alt="Farmacia Logo" />
           <div className={styles.storeInfo}>
             <div>123 Business Street</div>
             <div>City, Country 12345</div>
@@ -354,9 +366,6 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
                 <span className={styles.itemPrice}>
                   {formatMoney(item.product.price * item.quantity)}
                 </span>
-              </div>
-              <div className={styles.itemDetails}>
-                {item.quantity} × {formatMoney(item.product.price)} • SKU: {item.product.sku}
               </div>
             </div>
           ))}
