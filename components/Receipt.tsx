@@ -107,9 +107,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         <div class="header">
           <img class="storeLogo" src="/FarmaciaLogo.png" alt="Farmacia Logo" />
           <div class="storeInfo">
-            <div>123 Business Street</div>
-            <div>City, Country 12345</div>
-            <div>Tel: (123) 456-7890</div>
+            <div>243-D Kabatuhan Road, Deparo, Barangay 168, District 1, Caloocan City</div>
+            <div>(+63) 947 406 8136</div>
           </div>
         </div>
 
@@ -333,9 +332,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         <div className={styles.header}>
           <img className={styles.storeLogo} src="/FarmaciaLogo.png" alt="Farmacia Logo" />
           <div className={styles.storeInfo}>
-            <div>123 Business Street</div>
-            <div>City, Country 12345</div>
-            <div>Tel: (123) 456-7890</div>
+            <div>243-D Kabatuhan Road, Deparo, Barangay 168, District 1, Caloocan City</div>
+            <div>(+63) 947 406 8136</div>
           </div>
         </div>
 
