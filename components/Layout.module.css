@@ -195,11 +195,13 @@
 @media (max-width: 768px) {
   .main {
     margin-left: 80px;
+    padding-bottom: 76px;
   }
 
    .lowStockBellWrap {
      right: 18px;
-     top: 18px;
+     top: auto;
+     bottom: 18px;
    }
 }
 
@@ -211,6 +213,7 @@
 
    .lowStockBellWrap {
      right: 14px;
-     top: 14px;
+     top: auto;
+     bottom: 14px;
    }
 }

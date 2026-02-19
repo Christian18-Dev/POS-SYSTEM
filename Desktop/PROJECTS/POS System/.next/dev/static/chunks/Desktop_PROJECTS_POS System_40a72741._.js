@@ -221,22 +221,6 @@ var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.sign
 ;
 ;
 const AuthContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$PROJECTS$2f$POS__System$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createContext"])(undefined);
-const TOKEN_KEY = 'pos_token';
-function getAuthToken() {
-    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-    ;
-    return localStorage.getItem(TOKEN_KEY);
-}
-function setAuthToken(token) {
-    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-    ;
-    localStorage.setItem(TOKEN_KEY, token);
-}
-function removeAuthToken() {
-    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-    ;
-    localStorage.removeItem(TOKEN_KEY);
-}
 function AuthProvider({ children }) {
     _s();
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$PROJECTS$2f$POS__System$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
@@ -248,28 +232,23 @@ function AuthProvider({ children }) {
             // Check if user is logged in on mount
             const checkAuth = {
                 "AuthProvider.useEffect.checkAuth": async ()=>{
-                    const token = getAuthToken();
-                    if (token) {
-                        try {
-                            const response = await fetch('/api/auth/me', {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`
-                                }
-                            });
-                            if (response.ok) {
-                                const data = await response.json();
-                                if (data.success && data.user) {
-                                    setUser(data.user);
-                                } else {
-                                    removeAuthToken();
-                                }
+                    try {
+                        const response = await fetch('/api/auth/me', {
+                            credentials: 'include'
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.user) {
+                                setUser(data.user);
                             } else {
-                                removeAuthToken();
+                                setUser(null);
                             }
-                        } catch (error) {
-                            console.error('Auth check error:', error);
-                            removeAuthToken();
+                        } else {
+                            setUser(null);
                         }
+                    } catch (error) {
+                        console.error('Auth check error:', error);
+                        setUser(null);
                     }
                     setIsLoading(false);
                 }
@@ -291,7 +270,6 @@ function AuthProvider({ children }) {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                setAuthToken(data.token);
                 setUser(data.user);
                 toast.success('Signed in successfully');
                 return true;
@@ -306,10 +284,21 @@ function AuthProvider({ children }) {
         }
     };
     const logout = ()=>{
-        setUser(null);
-        removeAuthToken();
-        toast.info('Signed out');
-        router.push('/');
+        const run = async ()=>{
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch  {
+            // ignore
+            } finally{
+                setUser(null);
+                toast.info('Signed out');
+                router.push('/');
+            }
+        };
+        run();
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$PROJECTS$2f$POS__System$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AuthContext.Provider, {
         value: {
@@ -323,7 +312,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/AuthContext.tsx",
-        lineNumber: 119,
+        lineNumber: 108,
         columnNumber: 5
     }, this);
 }
@@ -360,17 +349,14 @@ __turbopack_context__.s([
     ()=>getAuthHeaders
 ]);
 function getAuthHeaders() {
-    const token = ("TURBOPACK compile-time truthy", 1) ? localStorage.getItem('pos_token') : "TURBOPACK unreachable";
     return {
-        'Content-Type': 'application/json',
-        ...token && {
-            Authorization: `Bearer ${token}`
-        }
+        'Content-Type': 'application/json'
     };
 }
 async function apiRequest(endpoint, options = {}) {
     const response = await fetch(endpoint, {
         ...options,
+        credentials: 'include',
         headers: {
             ...getAuthHeaders(),
             ...options.headers
@@ -710,8 +696,15 @@ function SalesProviderContent({ children }) {
     const clearCart = ()=>{
         setCart([]);
     };
-    const getCartTotal = ()=>{
-        return cart.reduce((total, item)=>total + item.product.price * item.quantity, 0);
+    const getCartTotal = (customerType = 'regular')=>{
+        const subtotal = cart.reduce((total, item)=>total + item.product.price * item.quantity, 0);
+        const VAT_RATE = 0.12;
+        const SENIOR_DISCOUNT_RATE = 0.2;
+        const round2 = (n)=>Math.round((n + Number.EPSILON) * 100) / 100;
+        if (customerType === 'senior') {
+            return round2(subtotal - subtotal * SENIOR_DISCOUNT_RATE);
+        }
+        return round2(subtotal + subtotal * VAT_RATE);
     };
     const checkout = async (customerName, paymentMethod = 'cash', customerType = 'regular')=>{
         if (cart.length === 0) {
@@ -805,7 +798,7 @@ function SalesProviderContent({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/SalesContext.tsx",
-        lineNumber: 237,
+        lineNumber: 247,
         columnNumber: 5
     }, this);
 }
@@ -822,7 +815,7 @@ function SalesProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/SalesContext.tsx",
-        lineNumber: 260,
+        lineNumber: 270,
         columnNumber: 10
     }, this);
 }

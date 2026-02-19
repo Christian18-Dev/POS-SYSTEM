@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken'
 import { apiRateLimit } from '@/lib/rateLimit'
 
 function getTokenFromRequest(request: NextRequest): string | null {
+  const cookieToken = request.cookies.get('pos_token')?.value
+  if (cookieToken) return cookieToken
+
   const authHeader = request.headers.get('authorization')
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7)

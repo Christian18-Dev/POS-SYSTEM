@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user._id.toString(),
@@ -69,8 +69,19 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
       },
-      token,
     })
+
+    response.cookies.set({
+      name: 'pos_token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     // Log more details for debugging (but don't expose to client)

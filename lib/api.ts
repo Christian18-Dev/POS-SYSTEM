@@ -1,10 +1,8 @@
 // API utility functions
 
 export function getAuthHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('pos_token') : null
   return {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
   }
 }
 
@@ -14,6 +12,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const response = await fetch(endpoint, {
     ...options,
+    credentials: 'include',
     headers: {
       ...getAuthHeaders(),
       ...options.headers,

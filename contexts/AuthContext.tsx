@@ -24,23 +24,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_KEY = 'pos_token'
-
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(TOKEN_KEY)
-}
-
-function setAuthToken(token: string): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(TOKEN_KEY, token)
-}
-
-function removeAuthToken(): void {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem(TOKEN_KEY)
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -50,29 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user is logged in on mount
     const checkAuth = async () => {
-      const token = getAuthToken()
-      if (token) {
-        try {
-          const response = await fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          })
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
 
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.user) {
-              setUser(data.user)
-            } else {
-              removeAuthToken()
-            }
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.user) {
+            setUser(data.user)
           } else {
-            removeAuthToken()
+            setUser(null)
           }
-        } catch (error) {
-          console.error('Auth check error:', error)
-          removeAuthToken()
+        } else {
+          setUser(null)
         }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        setUser(null)
       }
       setIsLoading(false)
     }
@@ -93,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setAuthToken(data.token)
         setUser(data.user)
         toast.success('Signed in successfully')
         return true
@@ -109,10 +86,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    setUser(null)
-    removeAuthToken()
-    toast.info('Signed out')
-    router.push('/')
+    const run = async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+        })
+      } catch {
+        // ignore
+      } finally {
+        setUser(null)
+        toast.info('Signed out')
+        router.push('/')
+      }
+    }
+
+    run()
   }
 
   return (
