@@ -696,15 +696,8 @@ function SalesProviderContent({ children }) {
     const clearCart = ()=>{
         setCart([]);
     };
-    const getCartTotal = (customerType = 'regular')=>{
-        const subtotal = cart.reduce((total, item)=>total + item.product.price * item.quantity, 0);
-        const VAT_RATE = 0.12;
-        const SENIOR_DISCOUNT_RATE = 0.2;
-        const round2 = (n)=>Math.round((n + Number.EPSILON) * 100) / 100;
-        if (customerType === 'senior') {
-            return round2(subtotal - subtotal * SENIOR_DISCOUNT_RATE);
-        }
-        return round2(subtotal + subtotal * VAT_RATE);
+    const getCartTotal = ()=>{
+        return cart.reduce((total, item)=>total + item.product.price * item.quantity, 0);
     };
     const checkout = async (customerName, paymentMethod = 'cash', customerType = 'regular')=>{
         if (cart.length === 0) {
@@ -798,7 +791,7 @@ function SalesProviderContent({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/SalesContext.tsx",
-        lineNumber: 247,
+        lineNumber: 237,
         columnNumber: 5
     }, this);
 }
@@ -815,7 +808,7 @@ function SalesProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/SalesContext.tsx",
-        lineNumber: 270,
+        lineNumber: 260,
         columnNumber: 10
     }, this);
 }
