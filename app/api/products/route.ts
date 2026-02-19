@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
       products: products.map((product) => ({
         id: product._id.toString(),
         name: product.name,
+        brand: (product as any).brand,
         description: product.description,
         price: product.price,
         cost: (product as any).cost,
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     await connectDB()
 
     const body = await request.json()
-    const { name, description, price, cost, stock, category, sku, image } = body
+    const { name, brand, description, price, cost, stock, category, sku, image } = body
 
     // Validation
     if (!name || !price || stock === undefined || !category || !sku) {
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
 
     // Sanitize and validate inputs
     const sanitizedName = sanitizeString(name, 200)
+    const sanitizedBrand = sanitizeString(brand || '', 100)
     const sanitizedDescription = sanitizeString(description || '', 1000)
     const sanitizedCategory = sanitizeString(category, 50)
     const sanitizedSku = sanitizeString(sku, 50).toUpperCase()
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
 
     const product = new Product({
       name: sanitizedName,
+      brand: sanitizedBrand,
       description: sanitizedDescription,
       price: parseFloat(price),
       cost: cost === undefined ? 0 : parseFloat(cost),
@@ -158,6 +161,7 @@ export async function POST(request: NextRequest) {
       product: {
         id: product._id.toString(),
         name: product.name,
+        brand: (product as any).brand,
         description: product.description,
         price: product.price,
         cost: (product as any).cost,

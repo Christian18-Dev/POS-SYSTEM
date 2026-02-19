@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext'
 export interface Product {
   id: string
   name: string
+  brand?: string
   description: string
   price: number
   cost?: number

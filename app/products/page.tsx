@@ -31,6 +31,8 @@ function ProductsContent() {
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
   const [isFetching, setIsFetching] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null)
@@ -41,6 +43,7 @@ function ProductsContent() {
   const [adjustForm, setAdjustForm] = useState({ newStock: '', note: '' })
   const [formData, setFormData] = useState({
     name: '',
+    brand: '',
     description: '',
     price: '',
     cost: '',
@@ -213,6 +216,7 @@ function ProductsContent() {
       setEditingProduct(product)
       setFormData({
         name: product.name,
+        brand: product.brand || '',
         description: product.description,
         price: product.price.toString(),
         cost: product.cost !== undefined ? String(product.cost) : '',
@@ -223,6 +227,7 @@ function ProductsContent() {
       setEditingProduct(null)
       setFormData({
         name: '',
+        brand: '',
         description: '',
         price: '',
         cost: '',
@@ -238,6 +243,7 @@ function ProductsContent() {
     setEditingProduct(null)
     setFormData({
       name: '',
+      brand: '',
       description: '',
       price: '',
       cost: '',
@@ -256,6 +262,7 @@ function ProductsContent() {
     
     const productData = {
       name: formData.name,
+      brand: formData.brand,
       description: formData.description,
       price: parseFloat(formData.price),
       cost: formData.cost === '' ? 0 : parseFloat(formData.cost),
@@ -308,6 +315,28 @@ function ProductsContent() {
     return `Page ${pagination.page} of ${pagination.totalPages}`
   }, [page, pagination])
 
+  const categories = useMemo(() => {
+    const unique = new Set<string>()
+    for (const product of products) {
+      const category = product.category?.trim()
+      if (category) unique.add(category)
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b))
+  }, [products])
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return products.filter((product) => {
+      const matchesQuery = query.length
+        ? (product.name || '').toLowerCase().includes(query)
+        : true
+      const matchesCategory = selectedCategory
+        ? product.category === selectedCategory
+        : true
+      return matchesQuery && matchesCategory
+    })
+  }, [products, searchQuery, selectedCategory])
+
   return (
     <div className={styles.products}>
       <header className={styles.header}>
@@ -334,12 +363,37 @@ function ProductsContent() {
           </div>
         ) : (
           <>
+            {products.length > 0 && (
+              <div className={styles.controlsBar}>
+                <input
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="Search products by name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <select
+                  className={styles.categorySelect}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className={styles.productsGrid}>
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <div key={product.id} className={styles.productCard}>
                   <div className={styles.productHeader}>
                     <div>
                       <h3 className={styles.productName}>{product.name}</h3>
+                      {!!product.brand && <p className={styles.productBrand}>{product.brand}</p>}
                       <p className={styles.productSku}>SKU: {product.sku}</p>
                     </div>
                     <div className={styles.productActions}>
@@ -455,7 +509,7 @@ function ProductsContent() {
           </>
         )}
 
-        {products.length === 0 && (
+        {!isFetching && products.length === 0 && (
           <div className={styles.emptyState}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -468,6 +522,13 @@ function ProductsContent() {
                 Add Product
               </button>
             )}
+          </div>
+        )}
+
+        {!isFetching && products.length > 0 && filteredProducts.length === 0 && (
+          <div className={styles.emptyState}>
+            <h3>No matching products</h3>
+            <p>Try adjusting your search or category filter.</p>
           </div>
         )}
       </main>
@@ -492,6 +553,15 @@ function ProductsContent() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="brand">Brand Name</label>
+                <input
+                  id="brand"
+                  type="text"
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                 />
               </div>
               <div className={styles.formGroup}>

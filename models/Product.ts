@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose'
 
 export interface IProduct extends Document {
   name: string
+  brand?: string
   description: string
   price: number
   cost?: number
@@ -18,6 +19,11 @@ const ProductSchema: Schema = new Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
+    },
+    brand: {
+      type: String,
+      default: '',
       trim: true,
     },
     description: {

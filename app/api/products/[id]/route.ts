@@ -35,6 +35,7 @@ export async function GET(
       product: {
         id: product._id.toString(),
         name: product.name,
+        brand: (product as any).brand,
         description: product.description,
         price: product.price,
         cost: (product as any).cost,
@@ -65,7 +66,7 @@ export async function PUT(
     const { id } = await params
 
     const body = await request.json()
-    const { name, description, price, cost, stock, category, sku, image } = body
+    const { name, brand, description, price, cost, stock, category, sku, image } = body
 
     const product = await Product.findById(id)
 
@@ -79,6 +80,9 @@ export async function PUT(
     // Sanitize and validate inputs
     if (name !== undefined) {
       product.name = sanitizeString(name, 200)
+    }
+    if (brand !== undefined) {
+      ;(product as any).brand = sanitizeString(brand, 100)
     }
     if (description !== undefined) {
       product.description = sanitizeString(description, 1000)
@@ -139,6 +143,7 @@ export async function PUT(
       product: {
         id: product._id.toString(),
         name: product.name,
+        brand: (product as any).brand,
         description: product.description,
         price: product.price,
         cost: (product as any).cost,

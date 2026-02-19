@@ -59,6 +59,48 @@
   padding: 2rem;
 }
 
+.controlsBar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 240px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: white;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.15);
+}
+
+.categorySelect {
+  min-width: 220px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: white;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.categorySelect:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.15);
+}
+
 .productsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -91,6 +133,13 @@
   font-weight: 600;
   color: #1e293b;
   margin: 0 0 0.25rem 0;
+}
+
+.productBrand {
+  font-size: 0.8125rem;
+  color: #475569;
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
 }
 
 .productSku {
