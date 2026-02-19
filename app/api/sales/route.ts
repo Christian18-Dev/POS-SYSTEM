@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
             ...m,
             note: `Order ${orderId}`,
           })),
-          { session }
+          { session, ordered: true }
         )
       }
 
