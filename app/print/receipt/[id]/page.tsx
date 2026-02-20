@@ -41,6 +41,7 @@ function PrintReceiptContent({ id }: { id: string }) {
               <span class="itemName">${item.product.name}</span>
               <span class="itemPrice">₱${lineTotal.toFixed(2)}</span>
             </div>
+            <div class="itemDetails">Qty: ${item.quantity} @ ₱${item.product.price.toFixed(2)}</div>
           </div>
         `
       })

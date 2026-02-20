@@ -36,6 +36,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
               <span class="itemName">${item.product.name}</span>
               <span class="itemPrice">${formatMoney(lineTotal)}</span>
             </div>
+            <div class="itemDetails">Qty: ${item.quantity} @ ${formatMoney(item.product.price)}</div>
           </div>
         `
       })
@@ -364,6 +365,9 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
                 <span className={styles.itemPrice}>
                   {formatMoney(item.product.price * item.quantity)}
                 </span>
+              </div>
+              <div className={styles.itemDetails}>
+                Qty: {item.quantity} @ {formatMoney(item.product.price)}
               </div>
             </div>
           ))}
