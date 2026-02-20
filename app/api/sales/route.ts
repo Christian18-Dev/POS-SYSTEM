@@ -129,7 +129,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const resolvedCustomerType: 'regular' | 'senior' = customerType === 'senior' ? 'senior' : 'regular'
+    const resolvedCustomerType: 'regular' | 'senior' | 'pwd' =
+      customerType === 'senior' ? 'senior' : customerType === 'pwd' ? 'pwd' : 'regular'
 
     // Transaction: stock updates + sale creation must succeed together
     const session = await mongoose.startSession()
@@ -243,21 +244,20 @@ export async function POST(request: NextRequest) {
       const orderId = `FBT-${dateKey}-${String(counterDoc.seq).padStart(4, '0')}`
 
       const VAT_RATE = 0.12
-      const discountRate = resolvedCustomerType === 'senior' ? 0.2 : 0
+      const isDiscountEligible = resolvedCustomerType === 'senior' || resolvedCustomerType === 'pwd'
+      const discountRate = isDiscountEligible ? 0.2 : 0
 
       const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
       // Assumption: item prices are VAT-inclusive.
       // Regular customer: total due equals subtotal; VAT is only for reporting/breakdown.
-      // Senior: VAT-exempt + 20% discount on the VAT-exempt sales base.
+      // Senior/PWD: VAT-exempt + 20% discount on the VAT-exempt sales base.
       const vatableSales = resolvedCustomerType === 'regular' ? subtotal / (1 + VAT_RATE) : 0
       const vatAmount = resolvedCustomerType === 'regular' ? subtotal - vatableSales : 0
-      const vatExemptSales = resolvedCustomerType === 'senior' ? subtotal / (1 + VAT_RATE) : 0
-      const discountAmount = resolvedCustomerType === 'senior' ? vatExemptSales * discountRate : 0
+      const vatExemptSales = isDiscountEligible ? subtotal / (1 + VAT_RATE) : 0
+      const discountAmount = isDiscountEligible ? vatExemptSales * discountRate : 0
 
-      const totalDue = resolvedCustomerType === 'senior'
-        ? vatExemptSales - discountAmount
-        : subtotal
+      const totalDue = isDiscountEligible ? vatExemptSales - discountAmount : subtotal
 
       const saleTotal = round2(totalDue)
 

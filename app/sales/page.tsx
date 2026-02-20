@@ -37,7 +37,7 @@ function SalesContent() {
 
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash')
-  const [customerType, setCustomerType] = useState<'regular' | 'senior'>('regular')
+  const [customerType, setCustomerType] = useState<'regular' | 'senior' | 'pwd'>('regular')
   const [isProcessing, setIsProcessing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [completedSale, setCompletedSale] = useState<Sale | null>(null)
@@ -269,10 +269,11 @@ function SalesContent() {
                       <select
                         id="customerType"
                         value={customerType}
-                        onChange={(e) => setCustomerType(e.target.value as 'regular' | 'senior')}
+                        onChange={(e) => setCustomerType(e.target.value as 'regular' | 'senior' | 'pwd')}
                       >
                         <option value="regular">Regular</option>
                         <option value="senior">Senior Citizen (20% Discount, VAT Exempt)</option>
+                        <option value="pwd">PWD (20% Discount, VAT Exempt)</option>
                       </select>
                     </div>
 

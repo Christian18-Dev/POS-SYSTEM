@@ -20,6 +20,8 @@ function PrintReceiptContent({ id }: { id: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasPrinted, setHasPrinted] = useState(false)
 
+  const formatMoney = (n: number) => `₱${n.toFixed(2)}`
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -46,6 +48,67 @@ function PrintReceiptContent({ id }: { id: string }) {
         `
       })
       .join('')
+
+    const hasBreakdown =
+      typeof s.subtotal === 'number' ||
+      typeof s.discountAmount === 'number' ||
+      typeof s.vatAmount === 'number' ||
+      typeof s.vatableSales === 'number' ||
+      typeof s.vatExemptSales === 'number'
+
+    const totalsHtml = hasBreakdown
+      ? `
+          ${typeof s.subtotal === 'number'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">Subtotal:</span>
+            <span>${formatMoney(s.subtotal)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof s.vatableSales === 'number' && s.customerType !== 'senior' && s.customerType !== 'pwd'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VATable Sales:</span>
+            <span>${formatMoney(s.vatableSales)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof s.vatAmount === 'number' && s.customerType !== 'senior' && s.customerType !== 'pwd'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VAT (12%):</span>
+            <span>${formatMoney(s.vatAmount)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof s.vatExemptSales === 'number' && (s.customerType === 'senior' || s.customerType === 'pwd')
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">VAT-Exempt Sales:</span>
+            <span>${formatMoney(s.vatExemptSales)}</span>
+          </div>
+          `
+            : ''}
+
+          ${typeof s.discountAmount === 'number' && s.discountAmount > 0
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">${s.customerType === 'pwd' ? 'PWD Discount (20%):' : 'Senior Discount (20%):'}</span>
+            <span>- ${formatMoney(s.discountAmount)}</span>
+          </div>
+          `
+            : ''}
+        `
+      : `
+          <div class="totalRow">
+            <span class="totalLabel">Subtotal:</span>
+            <span>${formatMoney(s.total)}</span>
+          </div>
+        `
 
     return `
       <div class="receipt">
@@ -81,13 +144,10 @@ function PrintReceiptContent({ id }: { id: string }) {
         </div>
 
         <div class="totals">
-          <div class="totalRow">
-            <span class="totalLabel">Subtotal:</span>
-            <span>₱${s.total.toFixed(2)}</span>
-          </div>
+          ${totalsHtml}
           <div class="totalRow">
             <span class="totalLabel">Total:</span>
-            <span class="totalAmount">₱${s.total.toFixed(2)}</span>
+            <span class="totalAmount">${formatMoney(s.total)}</span>
           </div>
         </div>
       </div>

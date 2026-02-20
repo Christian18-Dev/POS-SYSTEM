@@ -16,7 +16,7 @@ export interface Sale {
   id: string
   items: CartItem[]
   total: number
-  customerType?: 'regular' | 'senior'
+  customerType?: 'regular' | 'senior' | 'pwd'
   subtotal?: number
   discountRate?: number
   discountAmount?: number
@@ -42,7 +42,7 @@ interface SalesContextType {
   checkout: (
     customerName?: string,
     paymentMethod?: 'cash' | 'card' | 'other',
-    customerType?: 'regular' | 'senior'
+    customerType?: 'regular' | 'senior' | 'pwd'
   ) => Promise<Sale>
   getSalesByDateRange: (startDate: Date, endDate: Date) => Sale[]
   getTotalSales: () => number
@@ -154,7 +154,7 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
   const checkout = async (
     customerName?: string,
     paymentMethod: 'cash' | 'card' | 'other' = 'cash',
-    customerType: 'regular' | 'senior' = 'regular'
+    customerType: 'regular' | 'senior' | 'pwd' = 'regular'
   ): Promise<Sale> => {
     if (cart.length === 0) {
       throw new Error('Cart is empty')

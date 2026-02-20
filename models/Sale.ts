@@ -12,7 +12,7 @@ export interface ISale extends Document {
   orderId: string
   items: ICartItem[]
   total: number
-  customerType?: 'regular' | 'senior'
+  customerType?: 'regular' | 'senior' | 'pwd'
   subtotal?: number
   discountRate?: number
   discountAmount?: number
@@ -75,7 +75,7 @@ const SaleSchema: Schema = new Schema(
     },
     customerType: {
       type: String,
-      enum: ['regular', 'senior'],
+      enum: ['regular', 'senior', 'pwd'],
       default: 'regular',
     },
     subtotal: {
