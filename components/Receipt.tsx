@@ -143,6 +143,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
             <span class="totalAmount">${formatMoney(sale.total)}</span>
           </div>
         </div>
+
+        <div class="footer">THIS SERVES AS YOUR INVOICE</div>
       </div>
     `
   }
@@ -162,10 +164,13 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
       }
       body {
         font-family: 'Courier New', monospace;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
       }
       .receiptViewport {
         width: 58mm;
-        margin: 0;
+        margin: 0 auto;
         padding: 6mm 4mm;
         font-size: 12px;
         background: #ffffff;
@@ -266,6 +271,17 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
       .totalAmount {
         font-weight: 900;
         font-size: 13px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 2px dashed #000;
+        font-size: 9px;
+        color: #475569;
+        line-height: 1.35;
+        letter-spacing: 0.2px;
       }
     `.trim()
   }
@@ -416,6 +432,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
             <span className={styles.totalAmount}>{formatMoney(sale.total)}</span>
           </div>
         </div>
+
+        <div className={styles.footer}>THIS SERVES AS YOUR INVOICE</div>
       </div>
 
       {!hidePrintButton && (

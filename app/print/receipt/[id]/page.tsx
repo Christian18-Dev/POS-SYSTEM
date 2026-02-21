@@ -150,6 +150,8 @@ function PrintReceiptContent({ id }: { id: string }) {
             <span class="totalAmount">${formatMoney(s.total)}</span>
           </div>
         </div>
+
+        <div class="footer">THIS SERVES AS YOUR INVOICE</div>
       </div>
     `
   }
