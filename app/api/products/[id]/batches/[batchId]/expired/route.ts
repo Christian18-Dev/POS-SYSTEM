@@ -10,7 +10,7 @@ import { strictRateLimit } from '@/lib/rateLimit'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; batchId: string }> }
 ) {
   try {
     const rateLimitResponse = await strictRateLimit(request)
@@ -21,50 +21,11 @@ export async function POST(
     const authUser = await requireAdmin(request)
     await connectDB()
 
-    const { id } = await params
-    const body = await request.json()
+    const { id, batchId } = await params
 
-    const quantityRaw = body?.quantity
+    const body = await request.json().catch(() => ({}))
     const noteRaw = body?.note
-    const expirationDateRaw = body?.expirationDate
-    const manufacturingDateRaw = body?.manufacturingDate
-
-    const quantity = parseInt(quantityRaw, 10)
-    if (isNaN(quantity) || quantity <= 0 || quantity > 999999) {
-      return NextResponse.json(
-        { error: 'Invalid quantity. Must be between 1 and 999999' },
-        { status: 400 }
-      )
-    }
-
-    const note = sanitizeString(noteRaw || '', 500)
-
-    if (expirationDateRaw === undefined || expirationDateRaw === null || String(expirationDateRaw).trim() === '') {
-      return NextResponse.json(
-        { error: 'Expiration date is required for restock batches' },
-        { status: 400 }
-      )
-    }
-
-    const parsedExpirationDate = new Date(expirationDateRaw)
-    if (Number.isNaN(parsedExpirationDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid expiration date' },
-        { status: 400 }
-      )
-    }
-
-    const parsedManufacturingDate =
-      manufacturingDateRaw === undefined || manufacturingDateRaw === null || String(manufacturingDateRaw).trim() === ''
-        ? null
-        : new Date(manufacturingDateRaw)
-
-    if (parsedManufacturingDate && Number.isNaN(parsedManufacturingDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid manufacturing date' },
-        { status: 400 }
-      )
-    }
+    const note = sanitizeString(noteRaw || `Expired batch: ${batchId}`, 500)
 
     const session = await mongoose.startSession()
     session.startTransaction()
@@ -76,18 +37,28 @@ export async function POST(
         return NextResponse.json({ error: 'Product not found' }, { status: 404 })
       }
 
-      const stockBefore = product.stock
-      const stockAfter = stockBefore + quantity
-
-      product.stock = stockAfter
-
       ;(product as any).batches = Array.isArray((product as any).batches) ? (product as any).batches : []
-      ;(product as any).batches.push({
-        quantity,
-        manufacturingDate: parsedManufacturingDate ?? (product as any).manufacturingDate ?? null,
-        expirationDate: parsedExpirationDate,
-        receivedAt: new Date(),
-      })
+
+      const batches: any[] = (product as any).batches
+      const target = batches.find((b: any) => String(b?._id) === String(batchId))
+
+      if (!target) {
+        await session.abortTransaction()
+        return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
+      }
+
+      const qtyBefore = typeof target.quantity === 'number' ? target.quantity : 0
+      if (qtyBefore <= 0) {
+        await session.abortTransaction()
+        return NextResponse.json({ error: 'Batch quantity is already 0' }, { status: 400 })
+      }
+
+      const stockBefore = product.stock
+      const removeQty = qtyBefore
+      const stockAfter = Math.max(0, stockBefore - removeQty)
+
+      target.quantity = 0
+      product.stock = stockAfter
 
       const nextExpiry = (product as any).batches
         .filter((b: any) => b && typeof b.quantity === 'number' && b.quantity > 0 && b.expirationDate)
@@ -96,14 +67,15 @@ export async function POST(
         .sort((a: Date, b: Date) => a.getTime() - b.getTime())[0]
 
       ;(product as any).expirationDate = nextExpiry || null
+
       await product.save({ session })
 
       await InventoryMovement.create(
         [
           {
             product: product._id,
-            type: 'RESTOCK',
-            change: quantity,
+            type: 'EXPIRED',
+            change: -removeQty,
             stockBefore,
             stockAfter,
             byUserId: authUser.userId,
@@ -118,18 +90,19 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
+        removed: removeQty,
         product: {
           id: product._id.toString(),
           name: product.name,
+          brand: (product as any).brand,
           description: product.description,
           price: product.price,
+          cost: (product as any).cost,
           stock: product.stock,
           category: product.category,
           sku: product.sku,
           image: product.image,
-          expirationDate: (product as any).expirationDate
-            ? new Date((product as any).expirationDate).toISOString()
-            : null,
+          expirationDate: (product as any).expirationDate ? new Date((product as any).expirationDate).toISOString() : null,
           batches: Array.isArray((product as any).batches)
             ? (product as any).batches.map((b: any) => ({
                 id: b?._id?.toString?.() || '',

@@ -1,5 +1,12 @@
 import mongoose, { Schema, Document, Model } from 'mongoose'
 
+export interface IProductBatch {
+  quantity: number
+  manufacturingDate?: Date | null
+  expirationDate: Date
+  receivedAt: Date
+}
+
 export interface IProduct extends Document {
   name: string
   brand?: string
@@ -10,6 +17,9 @@ export interface IProduct extends Document {
   category: string
   sku: string
   image?: string
+  manufacturingDate?: Date | null
+  expirationDate?: Date
+  batches?: IProductBatch[]
   createdAt: Date
   updatedAt: Date
 }
@@ -61,6 +71,39 @@ const ProductSchema: Schema = new Schema(
     image: {
       type: String,
       default: '',
+    },
+    manufacturingDate: {
+      type: Date,
+      default: null,
+    },
+    expirationDate: {
+      type: Date,
+      default: null,
+    },
+    batches: {
+      type: [
+        {
+          quantity: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+          manufacturingDate: {
+            type: Date,
+            default: null,
+          },
+          expirationDate: {
+            type: Date,
+            required: true,
+          },
+          receivedAt: {
+            type: Date,
+            required: true,
+            default: () => new Date(),
+          },
+        },
+      ],
+      default: [],
     },
   },
   {

@@ -103,14 +103,15 @@
 
 .productsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1.5rem;
 }
 
 .productCard {
   background: white;
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1.75rem;
+  min-height: 260px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
@@ -126,6 +127,8 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .productName {
@@ -152,17 +155,40 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .lowStockBadge {
-  padding: 0.25rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
   border-radius: 9999px;
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  text-transform: none;
+}
+
+.expiringSoonBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  text-transform: none;
 }
 
 .menuRoot {
@@ -318,6 +344,274 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.viewBatchesButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.95);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.viewBatchesButton:hover {
+  background: rgba(241, 245, 249, 0.98);
+  border-color: rgba(203, 213, 225, 0.95);
+  transform: translateY(-1px);
+}
+
+.viewBatchesCount {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.batchesModalBody {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.batchesModalSummary {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.batchesModalSummaryItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+.batchesModalSummaryLabel {
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.batchesModalSummaryValue {
+  font-size: 0.85rem;
+  font-weight: 950;
+  color: rgba(15, 23, 42, 0.88);
+}
+
+.batchesModalTable {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.batchesModalTableHeader {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr 0.7fr 0.85fr 0.7fr;
+  gap: 10px;
+  padding: 0.65rem 0.85rem;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.9));
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.batchesModalHeaderCell {
+  min-width: 0;
+}
+
+.batchesModalHeaderCellRight {
+  text-align: right;
+}
+
+.batchesModalList {
+  display: flex;
+  flex-direction: column;
+  max-height: min(55vh, 360px);
+  overflow: auto;
+}
+
+.batchesModalList::-webkit-scrollbar {
+  width: 10px;
+}
+
+.batchesModalList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.batchesModalList::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+  border-radius: 9999px;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+}
+
+.batchesModalRow {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr 0.7fr 0.85fr 0.7fr;
+  gap: 10px;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.batchesModalRow:last-child {
+  border-bottom: none;
+}
+
+.batchesModalCellPrimary {
+  font-size: 0.92rem;
+  font-weight: 950;
+  color: rgba(15, 23, 42, 0.9);
+}
+
+.batchesModalCellQty {
+  font-size: 0.9rem;
+  font-weight: 950;
+  color: rgba(15, 23, 42, 0.7);
+  text-align: right;
+}
+
+.batchesModalCellMeta {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: rgba(15, 23, 42, 0.55);
+  text-align: right;
+}
+
+.batchesModalCellAction {
+  text-align: right;
+}
+
+.batchesModalExpired {
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.batchesModalExpired:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.55);
+  transform: translateY(-1px);
+}
+
+.batchesModalExpired:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .batchesModal {
+    max-width: 560px;
+  }
+}
+
+.batchesModalEmpty {
+  padding: 1rem 0.95rem;
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.65);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.batchesWrap {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(226, 232, 240, 0.95);
+}
+
+.batchesToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.9);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.batchesToggle:hover {
+  background: rgba(241, 245, 249, 0.95);
+  border-color: rgba(203, 213, 225, 0.95);
+}
+
+.batchesCount {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.batchesList {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.35rem 0.2rem 0;
+}
+
+.batchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.batchExpiry {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.batchQty {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.6);
+}
+
 .productDetail {
   display: flex;
   justify-content: space-between;
@@ -436,6 +730,14 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
+.batchesModal {
+  max-width: 760px;
+}
+
+.confirmExpiredModal {
+  max-width: 540px;
+}
+
 .modalHeader {
   display: flex;
   justify-content: space-between;
@@ -449,6 +751,69 @@
   font-weight: 600;
   color: #1e293b;
   margin: 0;
+}
+
+.confirmExpiredBody {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.confirmExpiredIntro {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(254, 242, 242, 0.8);
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.confirmExpiredIntroTitle {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: rgba(185, 28, 28, 0.95);
+  margin-bottom: 0.25rem;
+}
+
+.confirmExpiredIntroText {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: rgba(15, 23, 42, 0.72);
+  line-height: 1.35;
+}
+
+.confirmExpiredDetails {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.85);
+  padding: 0.9rem 1rem;
+}
+
+.confirmExpiredDetailRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+}
+
+.confirmExpiredDetailRow + .confirmExpiredDetailRow {
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.confirmExpiredDetailLabel {
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.confirmExpiredDetailValue {
+  font-size: 0.95rem;
+  font-weight: 950;
+  color: rgba(15, 23, 42, 0.88);
+  text-align: right;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .closeButton {

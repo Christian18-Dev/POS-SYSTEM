@@ -10,6 +10,7 @@ import Layout from '@/components/Layout'
 import styles from './products.module.css'
 import { apiRequest } from '@/lib/api'
 import { isLowStock } from '@/lib/stockAlerts'
+import { isExpiringSoon } from '@/lib/expirationAlerts'
 
 type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
@@ -35,11 +36,18 @@ function ProductsContent() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [batchesModalProduct, setBatchesModalProduct] = useState<Product | null>(null)
+  const [expiringBatchActionId, setExpiringBatchActionId] = useState<string | null>(null)
+  const [confirmExpiredBatch, setConfirmExpiredBatch] = useState<null | {
+    productId: string
+    productName: string
+    batch: { id: string; expirationDate: string; quantity: number }
+  }>(null)
   const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null)
   const [actionModal, setActionModal] = useState<null | 'restock' | 'adjust' | 'delete'>(null)
   const [actionProduct, setActionProduct] = useState<Product | null>(null)
   const [isActionSubmitting, setIsActionSubmitting] = useState(false)
-  const [restockForm, setRestockForm] = useState({ quantity: '1', note: '' })
+  const [restockForm, setRestockForm] = useState({ quantity: '1', manufacturingDate: '', expirationDate: '', note: '' })
   const [adjustForm, setAdjustForm] = useState({ newStock: '', note: '' })
   const [formData, setFormData] = useState({
     name: '',
@@ -80,7 +88,7 @@ function ProductsContent() {
     }
     setOpenMenuProductId(null)
     setActionProduct(product)
-    setRestockForm({ quantity: '1', note: '' })
+    setRestockForm({ quantity: '1', manufacturingDate: '', expirationDate: '', note: '' })
     setActionModal('restock')
   }
 
@@ -109,7 +117,7 @@ function ProductsContent() {
     if (isActionSubmitting) return
     setActionModal(null)
     setActionProduct(null)
-    setRestockForm({ quantity: '1', note: '' })
+    setRestockForm({ quantity: '1', manufacturingDate: '', expirationDate: '', note: '' })
     setAdjustForm({ newStock: '', note: '' })
   }
 
@@ -130,7 +138,12 @@ function ProductsContent() {
       setIsActionSubmitting(true)
       await apiRequest<{ success: boolean; product: Product }>(`/api/products/${actionProduct.id}/restock`, {
         method: 'POST',
-        body: JSON.stringify({ quantity, note: restockForm.note }),
+        body: JSON.stringify({
+          quantity,
+          manufacturingDate: restockForm.manufacturingDate,
+          expirationDate: restockForm.expirationDate,
+          note: restockForm.note,
+        }),
       })
 
       toast.success('Restock recorded')
@@ -398,7 +411,25 @@ function ProductsContent() {
                     </div>
                     <div className={styles.productActions}>
                       {isLowStock(product.stock) && (
-                        <span className={styles.lowStockBadge}>LOW STOCK</span>
+                        <span className={styles.lowStockBadge}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M12 9V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.53 21H20.47A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Low stock
+                        </span>
+                      )}
+                      {isExpiringSoon(product.expirationDate) && (
+                        <span className={styles.expiringSoonBadge}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M8 7V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M16 7V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M4 11H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M6 5H18A2 2 0 0 1 20 7V19A2 2 0 0 1 18 21H6A2 2 0 0 1 4 19V7A2 2 0 0 1 6 5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Expiring
+                        </span>
                       )}
                       {isAdmin && (
                         <div className={styles.menuRoot} data-menu-root={product.id}>
@@ -476,6 +507,17 @@ function ProductsContent() {
                       </span>
                     </div>
                   </div>
+
+                  {Array.isArray(product.batches) && product.batches.length > 0 && (
+                    <button
+                      type="button"
+                      className={styles.viewBatchesButton}
+                      onClick={() => setBatchesModalProduct(product)}
+                    >
+                      View Batches
+                    </button>
+                  )}
+
                   <div className={styles.productPrice}>₱{product.price.toFixed(2)}</div>
                 </div>
               ))}
@@ -619,6 +661,7 @@ function ProductsContent() {
                   required
                 />
               </div>
+
               <div className={styles.formActions}>
                 <button type="button" onClick={handleCloseModal} className={styles.cancelButton}>
                   Cancel
@@ -658,15 +701,38 @@ function ProductsContent() {
                   void submitRestock()
                 }}
               >
+                <div className={styles.formGroup}>
+                  <label htmlFor="restock-qty">Quantity *</label>
+                  <input
+                    id="restock-qty"
+                    type="number"
+                    min="1"
+                    value={restockForm.quantity}
+                    onChange={(e) => setRestockForm((p) => ({ ...p, quantity: e.target.value }))}
+                    required
+                    disabled={isActionSubmitting}
+                  />
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label htmlFor="restock-qty">Quantity *</label>
+                    <label htmlFor="restock-mfg">Manufacturing Date</label>
                     <input
-                      id="restock-qty"
-                      type="number"
-                      min="1"
-                      value={restockForm.quantity}
-                      onChange={(e) => setRestockForm((p) => ({ ...p, quantity: e.target.value }))}
+                      id="restock-mfg"
+                      type="date"
+                      value={restockForm.manufacturingDate}
+                      onChange={(e) => setRestockForm((p) => ({ ...p, manufacturingDate: e.target.value }))}
+                      disabled={isActionSubmitting}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="restock-exp">Expiration Date *</label>
+                    <input
+                      id="restock-exp"
+                      type="date"
+                      value={restockForm.expirationDate}
+                      onChange={(e) => setRestockForm((p) => ({ ...p, expirationDate: e.target.value }))}
                       required
                       disabled={isActionSubmitting}
                     />
@@ -777,6 +843,214 @@ function ProductsContent() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {batchesModalProduct && (
+        <div className={styles.modalOverlay} onClick={() => setBatchesModalProduct(null)}>
+          <div className={`${styles.modal} ${styles.batchesModal}`} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Batches: {batchesModalProduct.name}</h2>
+              <button onClick={() => setBatchesModalProduct(null)} className={styles.closeButton}>
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.batchesModalBody}>
+              {(() => {
+                const visibleBatches = (batchesModalProduct.batches || [])
+                  .filter((b) => typeof b?.quantity === 'number' && b.quantity > 0)
+                  .slice()
+                  .sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime())
+
+                const totalQty = visibleBatches.reduce((sum, b) => sum + b.quantity, 0)
+
+                return (
+                  <>
+                    <div className={styles.batchesModalSummary}>
+                      <span className={styles.batchesModalSummaryItem}>
+                        <span className={styles.batchesModalSummaryLabel}>Batches</span>
+                        <span className={styles.batchesModalSummaryValue}>{visibleBatches.length}</span>
+                      </span>
+                      <span className={styles.batchesModalSummaryItem}>
+                        <span className={styles.batchesModalSummaryLabel}>Total Qty</span>
+                        <span className={styles.batchesModalSummaryValue}>{totalQty}</span>
+                      </span>
+                    </div>
+
+                    <div className={styles.batchesModalTable}>
+                      <div className={styles.batchesModalTableHeader}>
+                        <span className={styles.batchesModalHeaderCell}>Manufacturing Date</span>
+                        <span className={styles.batchesModalHeaderCell}>Expiration Date</span>
+                        <span
+                          className={`${styles.batchesModalHeaderCell} ${styles.batchesModalHeaderCellRight}`}
+                        >
+                          Quantity
+                        </span>
+                        <span
+                          className={`${styles.batchesModalHeaderCell} ${styles.batchesModalHeaderCellRight}`}
+                        >
+                          Added on
+                        </span>
+                        <span
+                          className={`${styles.batchesModalHeaderCell} ${styles.batchesModalHeaderCellRight}`}
+                        >
+                          Action
+                        </span>
+                      </div>
+
+                      {visibleBatches.length > 0 ? (
+                        <div className={styles.batchesModalList}>
+                          {visibleBatches.map((b, idx) => (
+                            <div
+                              key={`${batchesModalProduct.id}-batch-${idx}`}
+                              className={styles.batchesModalRow}
+                            >
+                              <span className={styles.batchesModalCellPrimary}>
+                                {b.manufacturingDate ? String(b.manufacturingDate).slice(0, 10) : ''}
+                              </span>
+                              <span className={styles.batchesModalCellPrimary}>
+                                {String(b.expirationDate).slice(0, 10)}
+                              </span>
+                              <span className={styles.batchesModalCellQty}>{b.quantity} pcs</span>
+                              <span className={styles.batchesModalCellMeta}>
+                                {b.receivedAt ? String(b.receivedAt).slice(0, 10) : ''}
+                              </span>
+                              <span className={styles.batchesModalCellAction}>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    className={styles.batchesModalExpired}
+                                    disabled={b.quantity <= 0 || expiringBatchActionId === b.id}
+                                    onClick={async () => {
+                                      setConfirmExpiredBatch({
+                                        productId: batchesModalProduct.id,
+                                        productName: batchesModalProduct.name,
+                                        batch: {
+                                          id: b.id,
+                                          expirationDate: b.expirationDate,
+                                          quantity: b.quantity,
+                                        },
+                                      })
+                                    }}
+                                  >
+                                    Expired
+                                  </button>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className={styles.batchesModalEmpty}>
+                          No available batches. Restock this product to create a new batch.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmExpiredBatch && (
+        <div className={styles.modalOverlay} onClick={() => setConfirmExpiredBatch(null)}>
+          <div
+            className={`${styles.modal} ${styles.confirmExpiredModal}`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-expired-batch-title"
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="confirm-expired-batch-title">Confirm expired batch</h2>
+              <button onClick={() => setConfirmExpiredBatch(null)} className={styles.closeButton}>
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.confirmExpiredBody}>
+              <div className={styles.confirmExpiredIntro}>
+                <div className={styles.confirmExpiredIntroTitle}>This action cannot be undone</div>
+                <div className={styles.confirmExpiredIntroText}>
+                  Expiring a batch will permanently remove its quantity from stock.
+                </div>
+              </div>
+
+              <div className={styles.confirmExpiredDetails}>
+                <div className={styles.confirmExpiredDetailRow}>
+                  <span className={styles.confirmExpiredDetailLabel}>Product</span>
+                  <span className={styles.confirmExpiredDetailValue}>{confirmExpiredBatch.productName}</span>
+                </div>
+                <div className={styles.confirmExpiredDetailRow}>
+                  <span className={styles.confirmExpiredDetailLabel}>Expiration date</span>
+                  <span className={styles.confirmExpiredDetailValue}>
+                    {String(confirmExpiredBatch.batch.expirationDate).slice(0, 10)}
+                  </span>
+                </div>
+                <div className={styles.confirmExpiredDetailRow}>
+                  <span className={styles.confirmExpiredDetailLabel}>Quantity to remove</span>
+                  <span className={styles.confirmExpiredDetailValue}>{confirmExpiredBatch.batch.quantity} pcs</span>
+                </div>
+              </div>
+
+              <div className={styles.formActions}>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={() => setConfirmExpiredBatch(null)}
+                  disabled={expiringBatchActionId === confirmExpiredBatch.batch.id}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.dangerButton}
+                  disabled={expiringBatchActionId === confirmExpiredBatch.batch.id}
+                  onClick={async () => {
+                    try {
+                      setExpiringBatchActionId(confirmExpiredBatch.batch.id)
+                      await apiRequest<{ success: boolean; product: Product }>(
+                        `/api/products/${confirmExpiredBatch.productId}/batches/${confirmExpiredBatch.batch.id}/expired`,
+                        {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            note: `Expired batch (${String(confirmExpiredBatch.batch.expirationDate).slice(0, 10)})`,
+                          }),
+                        }
+                      )
+                      toast.success('Expired stock removed')
+                      setConfirmExpiredBatch(null)
+                      await fetchProducts(page)
+                      await refreshProducts()
+                      if (batchesModalProduct?.id === confirmExpiredBatch.productId) {
+                        const refreshed = await apiRequest<{ success: boolean; product: Product }>(
+                          `/api/products/${confirmExpiredBatch.productId}`
+                        )
+                        if (refreshed.success) {
+                          setBatchesModalProduct(refreshed.product)
+                        }
+                      }
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : 'Failed to remove expired stock'
+                      )
+                    } finally {
+                      setExpiringBatchActionId(null)
+                    }
+                  }}
+                >
+                  {expiringBatchActionId === confirmExpiredBatch.batch.id ? 'Removing…' : 'Mark as expired'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

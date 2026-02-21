@@ -508,7 +508,7 @@ function ProductProviderContent({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/ProductContext.tsx",
-        lineNumber: 134,
+        lineNumber: 143,
         columnNumber: 5
     }, this);
 }
@@ -523,7 +523,7 @@ function ProductProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/PROJECTS/POS System/contexts/ProductContext.tsx",
-        lineNumber: 151,
+        lineNumber: 160,
         columnNumber: 10
     }, this);
 }

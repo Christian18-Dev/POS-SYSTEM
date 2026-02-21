@@ -65,6 +65,21 @@ export async function GET(request: NextRequest) {
         category: product.category,
         sku: product.sku,
         image: product.image,
+        manufacturingDate: (product as any).manufacturingDate
+          ? new Date((product as any).manufacturingDate).toISOString()
+          : null,
+        expirationDate: (product as any).expirationDate
+          ? new Date((product as any).expirationDate).toISOString()
+          : null,
+        batches: Array.isArray((product as any).batches)
+          ? (product as any).batches.map((b: any) => ({
+              id: b?._id?.toString?.() || '',
+              quantity: typeof b?.quantity === 'number' ? b.quantity : 0,
+              manufacturingDate: b?.manufacturingDate ? new Date(b.manufacturingDate).toISOString() : null,
+              expirationDate: b?.expirationDate ? new Date(b.expirationDate).toISOString() : null,
+              receivedAt: b?.receivedAt ? new Date(b.receivedAt).toISOString() : null,
+            }))
+          : [],
       })),
       ...(hasPagination && total !== undefined
         ? {
@@ -94,7 +109,7 @@ export async function POST(request: NextRequest) {
     await connectDB()
 
     const body = await request.json()
-    const { name, brand, description, price, cost, stock, category, sku, image } = body
+    const { name, brand, description, price, cost, stock, category, sku, image, manufacturingDate } = body
 
     // Validation
     if (!name || !price || stock === undefined || !category || !sku) {
@@ -142,6 +157,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const parsedManufacturingDate =
+      manufacturingDate === undefined || manufacturingDate === null || String(manufacturingDate).trim() === ''
+        ? null
+        : new Date(manufacturingDate)
+
+    if (parsedManufacturingDate && Number.isNaN(parsedManufacturingDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid manufacturing date' },
+        { status: 400 }
+      )
+    }
+
     const product = new Product({
       name: sanitizedName,
       brand: sanitizedBrand,
@@ -152,6 +179,8 @@ export async function POST(request: NextRequest) {
       category: sanitizedCategory,
       sku: sanitizedSku,
       image: sanitizedImage,
+      manufacturingDate: parsedManufacturingDate,
+      expirationDate: null,
     })
 
     await product.save()
@@ -169,6 +198,21 @@ export async function POST(request: NextRequest) {
         category: product.category,
         sku: product.sku,
         image: product.image,
+        manufacturingDate: (product as any).manufacturingDate
+          ? new Date((product as any).manufacturingDate).toISOString()
+          : null,
+        expirationDate: (product as any).expirationDate
+          ? new Date((product as any).expirationDate).toISOString()
+          : null,
+        batches: Array.isArray((product as any).batches)
+          ? (product as any).batches.map((b: any) => ({
+              id: b?._id?.toString?.() || '',
+              quantity: typeof b?.quantity === 'number' ? b.quantity : 0,
+              manufacturingDate: b?.manufacturingDate ? new Date(b.manufacturingDate).toISOString() : null,
+              expirationDate: b?.expirationDate ? new Date(b.expirationDate).toISOString() : null,
+              receivedAt: b?.receivedAt ? new Date(b.receivedAt).toISOString() : null,
+            }))
+          : [],
       },
     })
   } catch (error) {

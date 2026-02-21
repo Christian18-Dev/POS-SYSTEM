@@ -15,6 +15,15 @@ export interface Product {
   category: string
   sku: string
   image?: string
+  manufacturingDate?: string | null
+  expirationDate?: string | null
+  batches?: Array<{
+    id: string
+    quantity: number
+    manufacturingDate?: string | null
+    expirationDate: string
+    receivedAt: string
+  }>
 }
 
 interface ProductContextType {

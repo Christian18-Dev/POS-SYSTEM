@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose'
 
-export type InventoryMovementType = 'RESTOCK' | 'SALE' | 'ADJUSTMENT'
+export type InventoryMovementType = 'RESTOCK' | 'SALE' | 'ADJUSTMENT' | 'EXPIRED'
 
 export interface IInventoryMovement extends Document {
   product: Types.ObjectId
@@ -25,7 +25,7 @@ const InventoryMovementSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['RESTOCK', 'SALE', 'ADJUSTMENT'],
+      enum: ['RESTOCK', 'SALE', 'ADJUSTMENT', 'EXPIRED'],
       required: true,
       index: true,
     },
@@ -60,6 +60,10 @@ const InventoryMovementSchema: Schema = new Schema(
     timestamps: true,
   }
 )
+
+if (process.env.NODE_ENV !== 'production' && mongoose.models.InventoryMovement) {
+  delete mongoose.models.InventoryMovement
+}
 
 const InventoryMovement: Model<IInventoryMovement> =
   mongoose.models.InventoryMovement ||

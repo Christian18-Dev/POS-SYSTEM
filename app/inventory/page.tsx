@@ -8,7 +8,7 @@ import { apiRequest } from '@/lib/api'
 import { useToast } from '@/contexts/ToastContext'
 import { useProducts } from '@/contexts/ProductContext'
 
-type MovementType = 'RESTOCK' | 'SALE' | 'ADJUSTMENT'
+type MovementType = 'RESTOCK' | 'SALE' | 'ADJUSTMENT' | 'EXPIRED'
 
 type InventoryMovementDto = {
   id: string
@@ -120,6 +120,7 @@ function InventoryContent() {
               <option value="RESTOCK">RESTOCK</option>
               <option value="SALE">SALE</option>
               <option value="ADJUSTMENT">ADJUSTMENT</option>
+              <option value="EXPIRED">EXPIRED</option>
             </select>
           </div>
 

@@ -43,6 +43,21 @@ export async function GET(
         category: product.category,
         sku: product.sku,
         image: product.image,
+        manufacturingDate: (product as any).manufacturingDate
+          ? new Date((product as any).manufacturingDate).toISOString()
+          : null,
+        expirationDate: (product as any).expirationDate
+          ? new Date((product as any).expirationDate).toISOString()
+          : null,
+        batches: Array.isArray((product as any).batches)
+          ? (product as any).batches.map((b: any) => ({
+              id: b?._id?.toString?.() || '',
+              quantity: typeof b?.quantity === 'number' ? b.quantity : 0,
+              manufacturingDate: b?.manufacturingDate ? new Date(b.manufacturingDate).toISOString() : null,
+              expirationDate: b?.expirationDate ? new Date(b.expirationDate).toISOString() : null,
+              receivedAt: b?.receivedAt ? new Date(b.receivedAt).toISOString() : null,
+            }))
+          : [],
       },
     })
   } catch (error) {
@@ -66,7 +81,7 @@ export async function PUT(
     const { id } = await params
 
     const body = await request.json()
-    const { name, brand, description, price, cost, stock, category, sku, image } = body
+    const { name, brand, description, price, cost, stock, category, sku, image, manufacturingDate } = body
 
     const product = await Product.findById(id)
 
@@ -136,6 +151,21 @@ export async function PUT(
       product.image = sanitizeString(image, 500)
     }
 
+    if (manufacturingDate !== undefined) {
+      if (manufacturingDate === null || String(manufacturingDate).trim() === '') {
+        ;(product as any).manufacturingDate = null
+      } else {
+        const parsedManufacturingDate = new Date(manufacturingDate)
+        if (Number.isNaN(parsedManufacturingDate.getTime())) {
+          return NextResponse.json(
+            { error: 'Invalid manufacturing date' },
+            { status: 400 }
+          )
+        }
+        ;(product as any).manufacturingDate = parsedManufacturingDate
+      }
+    }
+
     await product.save()
 
     return NextResponse.json({
@@ -151,6 +181,21 @@ export async function PUT(
         category: product.category,
         sku: product.sku,
         image: product.image,
+        manufacturingDate: (product as any).manufacturingDate
+          ? new Date((product as any).manufacturingDate).toISOString()
+          : null,
+        expirationDate: (product as any).expirationDate
+          ? new Date((product as any).expirationDate).toISOString()
+          : null,
+        batches: Array.isArray((product as any).batches)
+          ? (product as any).batches.map((b: any) => ({
+              id: b?._id?.toString?.() || '',
+              quantity: typeof b?.quantity === 'number' ? b.quantity : 0,
+              manufacturingDate: b?.manufacturingDate ? new Date(b.manufacturingDate).toISOString() : null,
+              expirationDate: b?.expirationDate ? new Date(b.expirationDate).toISOString() : null,
+              receivedAt: b?.receivedAt ? new Date(b.receivedAt).toISOString() : null,
+            }))
+          : [],
       },
     })
   } catch (error) {

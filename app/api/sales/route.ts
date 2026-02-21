@@ -167,35 +167,92 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Atomically decrement stock, guarded by "stock >= quantity"
-        const updatedProduct = await Product.findOneAndUpdate(
-          { _id: item.productId, stock: { $gte: quantity } },
-          { $inc: { stock: -quantity } },
-          { new: true, session }
-        )
+        const product = await Product.findById(item.productId).session(session)
+        if (!product) {
+          await session.abortTransaction()
+          return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+        }
 
-        if (!updatedProduct) {
-          // Differentiate "not found" vs "insufficient stock"
-          const existingProduct = await Product.findById(item.productId).session(session)
-          if (!existingProduct) {
-            await session.abortTransaction()
-            return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-          }
-
+        const stockBefore = product.stock
+        if (stockBefore < quantity) {
           await session.abortTransaction()
           return NextResponse.json(
             {
-              error: `Insufficient stock for ${existingProduct.name}. Available: ${existingProduct.stock}, Requested: ${quantity}`,
+              error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`,
             },
             { status: 400 }
           )
         }
 
-        const stockAfter = updatedProduct.stock
-        const stockBefore = stockAfter + quantity
+        // FEFO: deduct from earliest-expiring batches first
+        ;(product as any).batches = Array.isArray((product as any).batches) ? (product as any).batches : []
+        const batches: any[] = (product as any).batches
+          .filter((b: any) => b && typeof b.quantity === 'number' && b.quantity > 0 && b.expirationDate)
+          .sort((a: any, b: any) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime())
+
+        // Legacy fallback: if stock exists but there are no valid batches yet, allow sale using total stock only.
+        if (batches.length === 0) {
+          const stockAfter = stockBefore - quantity
+          product.stock = stockAfter
+          await product.save({ session })
+
+          movementDrafts.push({
+            product: product._id,
+            type: 'SALE',
+            change: -quantity,
+            stockBefore,
+            stockAfter,
+            byUserId: authUser.userId,
+            byEmail: authUser.email,
+          })
+
+          subtotal += product.price * quantity
+
+          saleItems.push({
+            product: product._id,
+            quantity,
+            price: product.price,
+            productName: product.name,
+            productSku: product.sku,
+          })
+
+          continue
+        }
+
+        let remaining = quantity
+        for (const b of batches) {
+          if (remaining <= 0) break
+          const take = Math.min(remaining, b.quantity)
+          b.quantity = b.quantity - take
+          remaining -= take
+        }
+
+        if (remaining > 0) {
+          // Should not happen if product.stock was accurate, but guard anyway
+          await session.abortTransaction()
+          return NextResponse.json(
+            {
+              error: `Insufficient batch stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`,
+            },
+            { status: 400 }
+          )
+        }
+
+        const stockAfter = stockBefore - quantity
+        product.stock = stockAfter
+
+        const nextExpiry = (product as any).batches
+          .filter((b: any) => b && typeof b.quantity === 'number' && b.quantity > 0 && b.expirationDate)
+          .map((b: any) => new Date(b.expirationDate))
+          .filter((d: Date) => !Number.isNaN(d.getTime()))
+          .sort((a: Date, b: Date) => a.getTime() - b.getTime())[0]
+
+        ;(product as any).expirationDate = nextExpiry || null
+
+        await product.save({ session })
 
         movementDrafts.push({
-          product: updatedProduct._id,
+          product: product._id,
           type: 'SALE',
           change: -quantity,
           stockBefore,
@@ -204,14 +261,14 @@ export async function POST(request: NextRequest) {
           byEmail: authUser.email,
         })
 
-        subtotal += updatedProduct.price * quantity
+        subtotal += product.price * quantity
 
         saleItems.push({
-          product: updatedProduct._id,
+          product: product._id,
           quantity,
-          price: updatedProduct.price,
-          productName: updatedProduct.name,
-          productSku: updatedProduct.sku,
+          price: product.price,
+          productName: product.name,
+          productSku: product.sku,
         })
       }
 
