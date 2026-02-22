@@ -16,6 +16,73 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-right: 96px;
+}
+
+.exportButton {
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 1px solid #17795E;
+  background-color: #209978;
+  overflow: hidden;
+}
+
+.exportButton,
+.exportButtonIcon,
+.exportButtonText {
+  transition: all 0.3s;
+}
+
+.exportButtonText {
+  transform: translateX(22px);
+  color: #fff;
+  font-weight: 600;
+}
+
+.exportButtonIcon {
+  position: absolute;
+  transform: translateX(109px);
+  height: 100%;
+  width: 39px;
+  background-color: #17795E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exportButtonSvg {
+  width: 20px;
+  fill: #fff;
+}
+
+.exportButton:hover:not(:disabled) {
+  background: #17795E;
+}
+
+.exportButton:hover:not(:disabled) .exportButtonText {
+  color: transparent;
+}
+
+.exportButton:hover:not(:disabled) .exportButtonIcon {
+  width: 148px;
+  transform: translateX(0);
+}
+
+.exportButton:active:not(:disabled) .exportButtonIcon {
+  background-color: #146c54;
+}
+
+.exportButton:active:not(:disabled) {
+  border: 1px solid #146c54;
+}
+
+.exportButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .headerTitle {
@@ -418,6 +485,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    padding-right: 0;
   }
 
   .main {

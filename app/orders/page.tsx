@@ -8,6 +8,7 @@ import Receipt from '@/components/Receipt'
 import styles from './orders.module.css'
 import { apiRequest } from '@/lib/api'
 import { useToast } from '@/contexts/ToastContext'
+import { exportToExcel } from '@/lib/excel'
 
 type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
@@ -25,16 +26,33 @@ function OrdersContent() {
   const toast = useToast()
   const [orders, setOrders] = useState<Sale[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
   const limit = 20
   const [searchQuery, setSearchQuery] = useState('')
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Sale | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const { startDateIso, endDateIso } = useMemo(() => {
     if (dateFilter === 'all') return { startDateIso: null as string | null, endDateIso: null as string | null }
+
+    if (dateFilter === 'custom') {
+      if (!customStartDate || !customEndDate) {
+        return { startDateIso: null as string | null, endDateIso: null as string | null }
+      }
+
+      const start = new Date(`${customStartDate}T00:00:00.000`)
+      const end = new Date(`${customEndDate}T23:59:59.999`)
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return { startDateIso: null as string | null, endDateIso: null as string | null }
+      }
+
+      return { startDateIso: start.toISOString(), endDateIso: end.toISOString() }
+    }
 
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -44,12 +62,87 @@ function OrdersContent() {
     if (dateFilter === 'month') start.setMonth(start.getMonth() - 1)
 
     return { startDateIso: start.toISOString(), endDateIso: now.toISOString() }
-  }, [dateFilter])
+  }, [dateFilter, customStartDate, customEndDate])
+
+  const exportOrdersToExcel = async () => {
+    if (isExporting) return
+
+    try {
+      setIsExporting(true)
+
+      const toDateOnly = (iso: string) => {
+        const d = new Date(iso)
+        if (Number.isNaN(d.getTime())) return ''
+        return d.toISOString().slice(0, 10)
+      }
+
+      const params = new URLSearchParams()
+      if (searchQuery.trim()) params.set('search', searchQuery.trim())
+      if (startDateIso && endDateIso) {
+        params.set('startDate', startDateIso)
+        params.set('endDate', endDateIso)
+      }
+
+      const url = params.toString() ? `/api/sales?${params.toString()}` : '/api/sales'
+      const data = await apiRequest<{ success: boolean; sales: Sale[] }>(url)
+
+      if (!data.success) {
+        toast.error('Failed to export orders')
+        return
+      }
+
+      const allOrders = Array.isArray(data.sales) ? data.sales : []
+
+      const ordersSheet = allOrders.map((o) => ({
+        orderId: o.id,
+        date: toDateOnly(o.timestamp),
+        status: o.status,
+        paymentMethod: o.paymentMethod,
+        customerName: o.customerName || '',
+        customerType: o.customerType || '',
+        subtotal: o.subtotal ?? '',
+        discountRate: o.discountRate ?? '',
+        discountAmount: o.discountAmount ?? '',
+        vatRate: o.vatRate ?? '',
+        vatAmount: o.vatAmount ?? '',
+        vatableSales: o.vatableSales ?? '',
+        vatExemptSales: o.vatExemptSales ?? '',
+        total: o.total,
+        itemCount: Array.isArray(o.items) ? o.items.reduce((sum, it) => sum + (it.quantity || 0), 0) : 0,
+      }))
+
+      const orderItemsSheet = allOrders.flatMap((o) => {
+        const items = Array.isArray(o.items) ? o.items : []
+        return items.map((it) => ({
+          orderId: o.id,
+          productId: it.product.id,
+          productSku: it.product.sku,
+          productName: it.product.name,
+          unitPrice: it.product.price,
+          quantity: it.quantity,
+          lineTotal: it.product.price * it.quantity,
+        }))
+      })
+
+      const dateTag = new Date().toISOString().slice(0, 10)
+      exportToExcel(
+        {
+          Orders: ordersSheet,
+          OrderItems: orderItemsSheet,
+        },
+        `Farmacia_Transactions_${dateTag}.xlsx`
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export orders')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   useEffect(() => {
     // Reset to page 1 when filters change
     setPage(1)
-  }, [searchQuery, dateFilter])
+  }, [searchQuery, dateFilter, customStartDate, customEndDate])
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -137,6 +230,26 @@ function OrdersContent() {
             <h1 className={styles.headerTitle}>Orders & Transactions</h1>
             <p className={styles.headerSubtitle}>View and manage all sales transactions</p>
           </div>
+          <button
+            className={styles.exportButton}
+            type="button"
+            onClick={() => void exportOrdersToExcel()}
+            disabled={isExporting}
+          >
+            <span className={styles.exportButtonText}>Download</span>
+            <span className={styles.exportButtonIcon}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 35 35"
+                className={styles.exportButtonSvg}
+                aria-hidden="true"
+              >
+                <path d="M17.5,22.131a1.249,1.249,0,0,1-1.25-1.25V2.187a1.25,1.25,0,0,1,2.5,0V20.881A1.25,1.25,0,0,1,17.5,22.131Z"></path>
+                <path d="M17.5,22.693a3.189,3.189,0,0,1-2.262-.936L8.487,15.006a1.249,1.249,0,0,1,1.767-1.767l6.751,6.751a.7.7,0,0,0,.99,0l6.751-6.751a1.25,1.25,0,0,1,1.768,1.767l-6.752,6.751A3.191,3.191,0,0,1,17.5,22.693Z"></path>
+                <path d="M31.436,34.063H3.564A3.318,3.318,0,0,1,.25,30.749V22.011a1.25,1.25,0,0,1,2.5,0v8.738a.815.815,0,0,0,.814.814H31.436a.815.815,0,0,0,.814-.814V22.011a1.25,1.25,0,1,1,2.5,0v8.738A3.318,3.318,0,0,1,31.436,34.063Z"></path>
+              </svg>
+            </span>
+          </button>
         </div>
       </header>
 
@@ -182,7 +295,38 @@ function OrdersContent() {
             >
               This Month
             </button>
+            <button
+              onClick={() => setDateFilter('custom')}
+              className={`${styles.filterButton} ${dateFilter === 'custom' ? styles.active : ''}`}
+            >
+              Custom
+            </button>
           </div>
+
+          {dateFilter === 'custom' && (
+            <div className={styles.dateRangeRow}>
+              <div className={styles.dateRangeField}>
+                <label className={styles.dateRangeLabel} htmlFor="orders-start-date">From</label>
+                <input
+                  id="orders-start-date"
+                  type="date"
+                  className={styles.dateRangeInput}
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                />
+              </div>
+              <div className={styles.dateRangeField}>
+                <label className={styles.dateRangeLabel} htmlFor="orders-end-date">To</label>
+                <input
+                  id="orders-end-date"
+                  type="date"
+                  className={styles.dateRangeInput}
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Orders Table */}

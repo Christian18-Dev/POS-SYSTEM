@@ -11,6 +11,7 @@ import styles from './products.module.css'
 import { apiRequest } from '@/lib/api'
 import { isLowStock } from '@/lib/stockAlerts'
 import { isExpiringSoon } from '@/lib/expirationAlerts'
+import { exportToExcel } from '@/lib/excel'
 
 type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
@@ -32,6 +33,7 @@ function ProductsContent() {
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
   const [isFetching, setIsFetching] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -60,6 +62,51 @@ function ProductsContent() {
   })
 
   const limit = 12
+
+  const exportProductsToExcel = async () => {
+    if (isExporting) return
+
+    try {
+      setIsExporting(true)
+
+      const params = new URLSearchParams()
+      if (searchQuery.trim()) params.set('search', searchQuery.trim())
+      if (selectedCategory) params.set('category', selectedCategory)
+
+      const url = params.toString() ? `/api/products?${params.toString()}` : '/api/products'
+      const data = await apiRequest<{ success: boolean; products: Product[] }>(url)
+
+      if (!data.success) {
+        toast.error('Failed to export products')
+        return
+      }
+
+      const allProducts = Array.isArray(data.products) ? data.products : []
+
+      const productsSheet = allProducts.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        brand: p.brand || '',
+        category: p.category,
+        description: p.description,
+        price: p.price,
+        cost: p.cost ?? 0,
+        stock: p.stock,
+      }))
+
+      const dateTag = new Date().toISOString().slice(0, 10)
+      exportToExcel(
+        {
+          Products: productsSheet,
+        },
+        `Farmacia_Products_${dateTag}.xlsx`
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export products')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const fetchProducts = async (targetPage: number) => {
     setIsFetching(true)
@@ -358,14 +405,37 @@ function ProductsContent() {
             <h1 className={styles.headerTitle}>Products</h1>
             <p className={styles.headerSubtitle}>Manage your product inventory</p>
           </div>
-          {isAdmin && (
-            <button onClick={() => handleOpenModal()} className={styles.addButton}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Add Product
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              className={styles.exportButton}
+              type="button"
+              onClick={() => void exportProductsToExcel()}
+              disabled={isExporting}
+            >
+              <span className={styles.exportButtonText}>Download</span>
+              <span className={styles.exportButtonIcon}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 35 35"
+                  className={styles.exportButtonSvg}
+                  aria-hidden="true"
+                >
+                  <path d="M17.5,22.131a1.249,1.249,0,0,1-1.25-1.25V2.187a1.25,1.25,0,0,1,2.5,0V20.881A1.25,1.25,0,0,1,17.5,22.131Z"></path>
+                  <path d="M17.5,22.693a3.189,3.189,0,0,1-2.262-.936L8.487,15.006a1.249,1.249,0,0,1,1.767-1.767l6.751,6.751a.7.7,0,0,0,.99,0l6.751-6.751a1.25,1.25,0,0,1,1.768,1.767l-6.752,6.751A3.191,3.191,0,0,1,17.5,22.693Z"></path>
+                  <path d="M31.436,34.063H3.564A3.318,3.318,0,0,1,.25,30.749V22.011a1.25,1.25,0,0,1,2.5,0v8.738a.815.815,0,0,0,.814.814H31.436a.815.815,0,0,0,.814-.814V22.011a1.25,1.25,0,1,1,2.5,0v8.738A3.318,3.318,0,0,1,31.436,34.063Z"></path>
+                </svg>
+              </span>
             </button>
-          )}
+
+            {isAdmin && (
+              <button onClick={() => handleOpenModal()} className={styles.addButton}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Add Product
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

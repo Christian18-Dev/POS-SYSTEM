@@ -16,6 +16,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-right: 96px;
 }
 
 .headerTitle {
@@ -29,6 +30,74 @@
   font-size: 0.875rem;
   color: #64748b;
   margin: 0;
+}
+
+.exportButton {
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 1px solid #17795E;
+  background-color: #209978;
+  overflow: hidden;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.exportButton,
+.exportButtonIcon,
+.exportButtonText {
+  transition: all 0.3s;
+}
+
+.exportButtonText {
+  transform: translateX(22px);
+  color: #fff;
+  font-weight: 600;
+}
+
+.exportButtonIcon {
+  position: absolute;
+  transform: translateX(109px);
+  height: 100%;
+  width: 39px;
+  background-color: #17795E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exportButtonSvg {
+  width: 20px;
+  fill: #fff;
+}
+
+.exportButton:hover:not(:disabled) {
+  background: #17795E;
+}
+
+.exportButton:hover:not(:disabled) .exportButtonText {
+  color: transparent;
+}
+
+.exportButton:hover:not(:disabled) .exportButtonIcon {
+  width: 148px;
+  transform: translateX(0);
+}
+
+.exportButton:active:not(:disabled) .exportButtonIcon {
+  background-color: #146c54;
+}
+
+.exportButton:active:not(:disabled) {
+  border: 1px solid #146c54;
+}
+
+.exportButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .main {
@@ -87,6 +156,43 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.dateRangeRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dateRangeField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.dateRangeLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dateRangeInput {
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.dateRangeInput:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .filterButton {
@@ -527,6 +633,10 @@
 @media (max-width: 768px) {
   .main {
     padding: 1rem;
+  }
+
+  .headerContent {
+    padding-right: 0;
   }
 
   .filters {
