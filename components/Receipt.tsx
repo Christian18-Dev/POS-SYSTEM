@@ -115,7 +115,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
 
         <div class="orderInfo">
           <div class="infoRow">
-            <span class="label">Order ID:</span>
+            <span class="label">Invoice ID:</span>
             <span class="value">${sale.id}</span>
           </div>
           <div class="infoRow">
@@ -356,7 +356,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
 
         <div className={styles.orderInfo}>
           <div className={styles.infoRow}>
-            <span className={styles.label}>Order ID:</span>
+            <span className={styles.label}>Invoice ID:</span>
             <span>{sale.id}</span>
           </div>
           <div className={styles.infoRow}>

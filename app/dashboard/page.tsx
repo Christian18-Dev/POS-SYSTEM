@@ -142,7 +142,7 @@ function DashboardContent() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Order ID</th>
+                    <th>Invoice ID</th>
                     <th>Customer</th>
                     <th>Amount</th>
                     <th>Status</th>

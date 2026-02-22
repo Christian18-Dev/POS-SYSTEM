@@ -150,7 +150,7 @@ function OrdersContent() {
             </svg>
             <input
               type="text"
-              placeholder="Search by order ID or customer name..."
+              placeholder="Search by invoice ID or customer name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
@@ -195,7 +195,7 @@ function OrdersContent() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Order ID</th>
+                  <th>Invoice ID</th>
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Items</th>

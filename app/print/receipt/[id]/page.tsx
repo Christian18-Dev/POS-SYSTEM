@@ -122,7 +122,7 @@ function PrintReceiptContent({ id }: { id: string }) {
 
         <div class="orderInfo">
           <div class="infoRow">
-            <span class="label">Order ID:</span>
+            <span class="label">Invoice ID:</span>
             <span class="value">${s.id}</span>
           </div>
           <div class="infoRow">
