@@ -1,15 +1,18 @@
 'use client'
 
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { useProducts } from '@/contexts/ProductContext'
+import { Product } from '@/contexts/ProductContext'
 import { useSales, CartItem, Sale } from '@/contexts/SalesContext'
 import { useToast } from '@/contexts/ToastContext'
 import { isLowStock } from '@/lib/stockAlerts'
+import { apiRequest } from '@/lib/api'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import Receipt from '@/components/Receipt'
 import styles from './sales.module.css'
+
+type Pagination = { page: number; limit: number; total: number; totalPages: number }
 
 export default function SalesPage() {
   return (
@@ -24,7 +27,6 @@ export default function SalesPage() {
 function SalesContent() {
   const router = useRouter()
   const toast = useToast()
-  const { products } = useProducts()
   const {
     cart,
     addToCart,
@@ -40,9 +42,16 @@ function SalesContent() {
   const [customerType, setCustomerType] = useState<'regular' | 'senior' | 'pwd'>('regular')
   const [isProcessing, setIsProcessing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [products, setProducts] = useState<Product[]>([])
+  const [pagination, setPagination] = useState<Pagination | null>(null)
+  const [page, setPage] = useState(1)
+  const [isFetchingProducts, setIsFetchingProducts] = useState(true)
   const [completedSale, setCompletedSale] = useState<Sale | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
   const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({})
+
+  const limit = 24
 
   const commitQuantityInput = (productId: string, maxStock: number, fallbackQuantity: number) => {
     const raw = quantityInputs[productId]
@@ -75,12 +84,50 @@ function SalesContent() {
     }
   }
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim())
+    }, 300)
+    return () => window.clearTimeout(handle)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchQuery])
+
+  const fetchProducts = async (targetPage: number, query: string) => {
+    setIsFetchingProducts(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', String(targetPage))
+      params.set('limit', String(limit))
+      if (query) {
+        params.set('search', query)
+      }
+
+      const data = await apiRequest<{
+        success: boolean
+        products: Product[]
+        pagination?: Pagination
+      }>(`/api/products?${params.toString()}`)
+
+      if (data.success) {
+        setProducts(Array.isArray(data.products) ? data.products : [])
+        setPagination(data.pagination || null)
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load products')
+    } finally {
+      setIsFetchingProducts(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProducts(page, debouncedSearchQuery)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearchQuery])
+
+  const displayedProducts = useMemo(() => products, [products])
 
   const handleAddToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId)
@@ -145,7 +192,7 @@ function SalesContent() {
             </div>
 
             <div className={styles.productsGrid}>
-              {filteredProducts.map((product) => {
+              {displayedProducts.map((product) => {
                 const cartItem = cart.find((item) => item.product.id === product.id)
                 const isOutOfStock = product.stock === 0
 
@@ -207,9 +254,35 @@ function SalesContent() {
               })}
             </div>
 
-            {filteredProducts.length === 0 && (
+            {!isFetchingProducts && displayedProducts.length === 0 && (
               <div className={styles.emptyState}>
                 <p>No products found. Try a different search term.</p>
+              </div>
+            )}
+
+            {pagination && pagination.totalPages > 1 && (
+              <div className={styles.paginationBar}>
+                <span className={styles.paginationInfo}>
+                  Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
+                </span>
+                <div className={styles.paginationControls}>
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1 || isFetchingProducts}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={page >= pagination.totalPages || isFetchingProducts}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>
