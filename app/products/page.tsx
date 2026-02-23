@@ -35,6 +35,7 @@ function ProductsContent() {
   const [isFetching, setIsFetching] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -108,17 +109,34 @@ function ProductsContent() {
     }
   }
 
-  const fetchProducts = async (targetPage: number) => {
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim())
+    }, 300)
+    return () => window.clearTimeout(handle)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearchQuery, selectedCategory])
+
+  const fetchProducts = async (targetPage: number, query: string, category: string) => {
     setIsFetching(true)
     try {
+      const params = new URLSearchParams()
+      params.set('page', String(targetPage))
+      params.set('limit', String(limit))
+      if (query) params.set('search', query)
+      if (category) params.set('category', category)
+
       const data = await apiRequest<{
         success: boolean
         products: Product[]
         pagination?: Pagination
-      }>(`/api/products?page=${targetPage}&limit=${limit}`)
+      }>(`/api/products?${params.toString()}`)
 
       if (data.success) {
-        setProducts(data.products)
+        setProducts(Array.isArray(data.products) ? data.products : [])
         setPagination(data.pagination || null)
       }
     } catch (error) {
@@ -195,7 +213,7 @@ function ProductsContent() {
 
       toast.success('Restock recorded')
       closeActionModal()
-      await fetchProducts(page)
+      await fetchProducts(page, debouncedSearchQuery, selectedCategory)
       await refreshProducts()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to restock')
@@ -230,7 +248,7 @@ function ProductsContent() {
 
       toast.success('Stock adjusted')
       closeActionModal()
-      await fetchProducts(page)
+      await fetchProducts(page, debouncedSearchQuery, selectedCategory)
       await refreshProducts()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to adjust stock')
@@ -240,9 +258,9 @@ function ProductsContent() {
   }
 
   useEffect(() => {
-    fetchProducts(page)
+    fetchProducts(page, debouncedSearchQuery, selectedCategory)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [page, debouncedSearchQuery, selectedCategory])
 
   useEffect(() => {
     if (!openMenuProductId) return
@@ -344,7 +362,7 @@ function ProductsContent() {
       }
       handleCloseModal()
       toast.success(editingProduct ? 'Product updated' : 'Product created')
-      await fetchProducts(page)
+      await fetchProducts(page, debouncedSearchQuery, selectedCategory)
       await refreshProducts()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -363,7 +381,7 @@ function ProductsContent() {
       const remaining = products.length - 1
       const nextPage = remaining <= 0 && page > 1 ? page - 1 : page
       if (nextPage !== page) setPage(nextPage)
-      else await fetchProducts(page)
+      else await fetchProducts(page, debouncedSearchQuery, selectedCategory)
       await refreshProducts()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -383,19 +401,6 @@ function ProductsContent() {
     }
     return Array.from(unique).sort((a, b) => a.localeCompare(b))
   }, [products])
-
-  const filteredProducts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    return products.filter((product) => {
-      const matchesQuery = query.length
-        ? (product.name || '').toLowerCase().includes(query)
-        : true
-      const matchesCategory = selectedCategory
-        ? product.category === selectedCategory
-        : true
-      return matchesQuery && matchesCategory
-    })
-  }, [products, searchQuery, selectedCategory])
 
   return (
     <div className={styles.products}>
@@ -440,38 +445,36 @@ function ProductsContent() {
       </header>
 
       <main className={styles.main}>
+        <div className={styles.controlsBar}>
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search products by name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <select
+            className={styles.categorySelect}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {isFetching ? (
           <div className={styles.emptyState}>
             <p>Loading products...</p>
           </div>
         ) : (
           <>
-            {products.length > 0 && (
-              <div className={styles.controlsBar}>
-                <input
-                  type="text"
-                  className={styles.searchInput}
-                  placeholder="Search products by name"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <select
-                  className={styles.categorySelect}
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             <div className={styles.productsGrid}>
-              {filteredProducts.map((product) => (
+              {products.map((product) => (
                 <div key={product.id} className={styles.productCard}>
                   <div className={styles.productHeader}>
                     <div>
@@ -603,7 +606,7 @@ function ProductsContent() {
                     type="button"
                     className={styles.paginationButton}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
+                    disabled={page <= 1 || isFetching}
                   >
                     Prev
                   </button>
@@ -611,7 +614,7 @@ function ProductsContent() {
                     type="button"
                     className={styles.paginationButton}
                     onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                    disabled={page >= pagination.totalPages}
+                    disabled={page >= pagination.totalPages || isFetching}
                   >
                     Next
                   </button>
@@ -621,7 +624,10 @@ function ProductsContent() {
           </>
         )}
 
-        {!isFetching && products.length === 0 && (
+        {!isFetching &&
+          products.length === 0 &&
+          debouncedSearchQuery.trim() === '' &&
+          selectedCategory === '' && (
           <div className={styles.emptyState}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -637,7 +643,7 @@ function ProductsContent() {
           </div>
         )}
 
-        {!isFetching && products.length > 0 && filteredProducts.length === 0 && (
+        {!isFetching && products.length === 0 && (debouncedSearchQuery.trim() !== '' || selectedCategory !== '') && (
           <div className={styles.emptyState}>
             <h3>No matching products</h3>
             <p>Try adjusting your search or category filter.</p>
@@ -1098,7 +1104,7 @@ function ProductsContent() {
                       )
                       toast.success('Expired stock removed')
                       setConfirmExpiredBatch(null)
-                      await fetchProducts(page)
+                      await fetchProducts(page, debouncedSearchQuery, selectedCategory)
                       await refreshProducts()
                       if (batchesModalProduct?.id === confirmExpiredBatch.productId) {
                         const refreshed = await apiRequest<{ success: boolean; product: Product }>(
