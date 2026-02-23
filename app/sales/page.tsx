@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProducts } from '@/contexts/ProductContext'
 import { useSales, CartItem, Sale } from '@/contexts/SalesContext'
@@ -42,6 +42,38 @@ function SalesContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [completedSale, setCompletedSale] = useState<Sale | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
+  const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({})
+
+  const commitQuantityInput = (productId: string, maxStock: number, fallbackQuantity: number) => {
+    const raw = quantityInputs[productId]
+    if (raw === undefined) {
+      return
+    }
+
+    const trimmed = raw.trim()
+    const parsed = trimmed === '' ? fallbackQuantity : Number(trimmed)
+    const safeParsed = Number.isFinite(parsed) ? parsed : fallbackQuantity
+    const intQuantity = Math.floor(safeParsed)
+    const clamped = Math.max(0, Math.min(maxStock, intQuantity))
+
+    updateCartQuantity(productId, clamped)
+    setQuantityInputs((current) => {
+      const next = { ...current }
+      delete next[productId]
+      return next
+    })
+  }
+
+  const handleQuantityInputKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+    productId: string,
+    maxStock: number,
+    fallbackQuantity: number
+  ) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }
 
   const filteredProducts = products.filter(
     (product) =>
@@ -141,7 +173,18 @@ function SalesContent() {
                         >
                           -
                         </button>
-                        <span className={styles.quantity}>{cartItem.quantity}</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={product.stock}
+                          value={quantityInputs[product.id] ?? String(cartItem.quantity)}
+                          onChange={(e) => setQuantityInputs((current) => ({ ...current, [product.id]: e.target.value }))}
+                          onBlur={() => commitQuantityInput(product.id, product.stock, cartItem.quantity)}
+                          onKeyDown={(e) => handleQuantityInputKeyDown(e, product.id, product.stock, cartItem.quantity)}
+                          className={styles.quantityInput}
+                          aria-label="Quantity"
+                        />
                         <button
                           onClick={() => updateCartQuantity(product.id, cartItem.quantity + 1)}
                           className={styles.quantityButton}
@@ -207,7 +250,22 @@ function SalesContent() {
                           >
                             -
                           </button>
-                          <span className={styles.cartQuantity}>{item.quantity}</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            max={item.product.stock}
+                            value={quantityInputs[item.product.id] ?? String(item.quantity)}
+                            onChange={(e) =>
+                              setQuantityInputs((current) => ({ ...current, [item.product.id]: e.target.value }))
+                            }
+                            onBlur={() => commitQuantityInput(item.product.id, item.product.stock, item.quantity)}
+                            onKeyDown={(e) =>
+                              handleQuantityInputKeyDown(e, item.product.id, item.product.stock, item.quantity)
+                            }
+                            className={styles.cartQuantityInput}
+                            aria-label="Quantity"
+                          />
                           <button
                             onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
                             className={styles.cartQuantityButton}

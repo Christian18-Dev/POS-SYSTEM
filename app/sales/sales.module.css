@@ -249,6 +249,24 @@
   text-align: center;
 }
 
+.quantityInput {
+  width: 64px;
+  height: 32px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  outline: none;
+}
+
+.quantityInput:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.15);
+}
+
 .cartSection {
   background: white;
   border-radius: 0.75rem;
@@ -401,6 +419,24 @@
   color: #1e293b;
   min-width: 20px;
   text-align: center;
+}
+
+.cartQuantityInput {
+  width: 56px;
+  height: 28px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  outline: none;
+}
+
+.cartQuantityInput:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.15);
 }
 
 .cartItemTotal {
