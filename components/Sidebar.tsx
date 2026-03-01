@@ -26,7 +26,7 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.sidebarHeader}>
         <div className={styles.logo}>
-          <Image src="/FarmaciaLogo.png" alt="Farmacia Bethesda" width={84} height={84} priority />
+          <Image src="/Logo.png" alt="Farmacia Bethesda" width={84} height={84} priority />
         </div>
       </div>
 

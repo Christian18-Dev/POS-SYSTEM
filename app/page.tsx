@@ -62,7 +62,7 @@ export default function LoginPage() {
         <div className={styles.loginHeader}>
           <div className={styles.logo}>
             <Image
-              src="/FarmaciaLogo.png"
+              src="/Logo.png"
               alt="FARMACIA BETHESDA"
               width={180}
               height={180}

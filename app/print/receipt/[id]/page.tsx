@@ -113,7 +113,7 @@ function PrintReceiptContent({ id }: { id: string }) {
     return `
       <div class="receipt">
         <div class="header">
-          <img class="storeLogo" src="/FarmaciaLogo.png" alt="Farmacia Logo" />
+          <img class="storeLogo" src="/Logo.png" alt="Farmacia Logo" />
           <div class="storeInfo">
             <div>243-D Kabatuhan Road, Deparo, Barangay 168, District 1, Caloocan City</div>
             <div>(+63) 947 406 8136</div>
