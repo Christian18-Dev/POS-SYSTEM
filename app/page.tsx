@@ -64,8 +64,8 @@ export default function LoginPage() {
             <Image
               src="/FarmaciaLogo.png"
               alt="FARMACIA BETHESDA"
-              width={120}
-              height={120}
+              width={180}
+              height={180}
               priority
             />
           </div>

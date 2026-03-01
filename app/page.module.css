@@ -54,14 +54,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 132px;
-  height: 132px;
-  background: var(--background-white);
-  border-radius: 9999px;
   margin-bottom: 2rem;
-  overflow: hidden;
-  border: 1px solid rgba(24, 90, 49, 0.25);
-  box-shadow: var(--shadow-md);
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
 }
 
 .title {

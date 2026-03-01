@@ -48,17 +48,15 @@
 }
 
 .page-module__W-ED8q__logo {
-  background: var(--background-white);
-  width: 132px;
-  height: 132px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid #185a3140;
-  border-radius: 9999px;
+  box-shadow: none;
+  background: none;
+  border: none;
+  border-radius: 0;
   justify-content: center;
   align-items: center;
   margin-bottom: 2rem;
   display: inline-flex;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .page-module__W-ED8q__title {
