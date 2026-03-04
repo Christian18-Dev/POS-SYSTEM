@@ -241,7 +241,7 @@ export class BluetoothPrinterService {
       // Initialize printer
       await this.sendCommand(BluetoothPrinterService.ESC_POS.INIT)
 
-      // Store header (centered, bold)
+      // Header
       await this.sendCommand(BluetoothPrinterService.ESC_POS.ALIGN_CENTER)
       if (receiptData.logoUrl) {
         await this.sendRasterImageFromUrl(receiptData.logoUrl, receiptData.logoMaxWidthPx ?? 384)
@@ -255,70 +255,58 @@ export class BluetoothPrinterService {
         await this.sendCommand(BluetoothPrinterService.ESC_POS.DOUBLE_HEIGHT_OFF)
         await this.sendCommand(BluetoothPrinterService.ESC_POS.BOLD_OFF)
       }
-      
+
       // Store info
       await this.sendText(receiptData.storeAddress + '\n')
       await this.sendText(receiptData.storePhone + '\n')
-      
-      // Separator
       await this.sendText('================================\n')
-      
-      // Order info (left aligned)
+
+      // Order info
       await this.sendCommand(BluetoothPrinterService.ESC_POS.ALIGN_LEFT)
       await this.sendText(`Invoice: ${receiptData.invoiceId}\n`)
       await this.sendText(`Date: ${receiptData.date}\n`)
       await this.sendText(`Customer: ${receiptData.customerName}\n`)
       await this.sendText(`Payment: ${receiptData.paymentMethod}\n`)
-      
+
       // Items
       await this.sendText('--------------------------------\n')
       for (const item of receiptData.items) {
         await this.sendText(`${item.name}\n`)
         await this.sendText(`  ${item.quantity} x ${item.price.toFixed(2)} = ${(item.quantity * item.price).toFixed(2)}\n`)
       }
-      
+
       // Totals
       await this.sendText('--------------------------------\n')
       await this.sendCommand(BluetoothPrinterService.ESC_POS.BOLD_ON)
-      await this.sendText('Subtotal:\n')
-      await this.sendText(`${receiptData.subtotal.toFixed(2)}\n`)
 
-      if (typeof receiptData.vatableSales === 'number' && receiptData.vatableSales > 0) {
-        await this.sendText('VATable Sales:\n')
-        await this.sendText(`${receiptData.vatableSales.toFixed(2)}\n`)
-      } else if (typeof receiptData.vatExemptSales === 'number' && receiptData.vatExemptSales > 0) {
-        await this.sendText('VAT-Exempt Sales:\n')
-        await this.sendText(`${receiptData.vatExemptSales.toFixed(2)}\n`)
-      }
+      const baseAmount = receiptData.subtotal
 
-      if (typeof receiptData.discountAmount === 'number' && receiptData.discountAmount > 0) {
-        await this.sendText(`${receiptData.discountLabel || 'Discount:'}\n`)
-        await this.sendText(`- ${receiptData.discountAmount.toFixed(2)}\n`)
-      }
+      const computedVatAmount =
+        typeof receiptData.tax === 'number' && receiptData.tax > 0
+          ? receiptData.tax
+          : Math.round(((baseAmount - baseAmount / 1.12) + Number.EPSILON) * 100) / 100
 
-      if (typeof receiptData.tax === 'number') {
-        await this.sendText('VAT (12%):\n')
-        await this.sendText(`${receiptData.tax.toFixed(2)}\n`)
-      }
+      const computedVatableSales =
+        typeof receiptData.vatableSales === 'number'
+          ? receiptData.vatableSales
+          : Math.round(((baseAmount - computedVatAmount) + Number.EPSILON) * 100) / 100
 
-      await this.sendText('Total:\n')
-      await this.sendText(`${receiptData.total.toFixed(2)}\n`)
+      await this.sendText(`VATable Sales: ${computedVatableSales.toFixed(2)}\n`)
+      await this.sendText(`VAT (12%): ${computedVatAmount.toFixed(2)}\n`)
+      await this.sendText(`Total: ${receiptData.total.toFixed(2)}\n`)
       await this.sendCommand(BluetoothPrinterService.ESC_POS.BOLD_OFF)
-      
+
       // Footer
       await this.sendText('================================\n')
       await this.sendCommand(BluetoothPrinterService.ESC_POS.ALIGN_CENTER)
       await this.sendText('THANK YOU FOR YOUR PURCHASE\n')
       await this.sendText('THIS SERVES AS YOUR INVOICE\n')
-      
+
       // Cut paper
       await this.sendCommand(BluetoothPrinterService.ESC_POS.CUT_PAPER)
-      
-      // Feed some lines
       await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
       await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
       await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
-      
     } catch (error) {
       console.error('Failed to print receipt:', error)
       throw error
