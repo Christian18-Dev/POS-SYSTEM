@@ -6,6 +6,7 @@ class GlobalBluetoothService {
   private isConnected = false
   private reconnectAttempts = 0
   private maxReconnectAttempts = 3
+  private connectedPrinterName?: string
 
   static getInstance(): GlobalBluetoothService {
     if (!GlobalBluetoothService.instance) {
@@ -24,12 +25,13 @@ class GlobalBluetoothService {
     for (let i = 0; i < this.maxReconnectAttempts; i++) {
       try {
         const printer = await bluetoothPrinterService.requestPrinter()
-        if (printer && printer.name === 'PT210_6427') {
+        if (printer && (printer.name === 'PT210_6427' || printer.name === 'PT210_C94B')) {
           const connected = await bluetoothPrinterService.connect()
           if (connected) {
             this.isConnected = true
             this.reconnectAttempts = 0
-            console.log('Bluetooth auto-connected to PT210_6427')
+            this.connectedPrinterName = bluetoothPrinterService.getSelectedPrinterName() || printer.name
+            console.log(`Bluetooth auto-connected to ${this.connectedPrinterName}`)
             return true
           }
         }
@@ -43,6 +45,7 @@ class GlobalBluetoothService {
     }
 
     this.isConnected = false
+    this.connectedPrinterName = undefined
     return false
   }
 
@@ -52,12 +55,13 @@ class GlobalBluetoothService {
   } {
     return {
       isConnected: this.isConnected && bluetoothPrinterService.isConnected(),
-      printerName: 'PT210_6427'
+      printerName: this.connectedPrinterName || bluetoothPrinterService.getSelectedPrinterName()
     }
   }
 
   disconnect(): void {
     this.isConnected = false
+    this.connectedPrinterName = undefined
     bluetoothPrinterService.disconnect()
   }
 }

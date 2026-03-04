@@ -10,6 +10,8 @@ export class BluetoothPrinterService {
   private service: BluetoothRemoteGATTService | null = null
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null
 
+  private readonly allowedPrinterNames = ['PT210_6427', 'PT210_C94B'] as const
+
   private async sendBytes(bytes: Uint8Array): Promise<void> {
     if (!this.characteristic) {
       throw new Error('Not connected to printer')
@@ -47,12 +49,15 @@ export class BluetoothPrinterService {
       // First try to find the specific printer by name
       try {
         const devices = await navigator.bluetooth.getDevices()
-        const targetPrinter = devices.find((device: BluetoothDevice) => device.name === 'PT210_6427')
+        const targetPrinter = devices.find((device: BluetoothDevice) => {
+          const name = device.name
+          return !!name && (this.allowedPrinterNames as readonly string[]).includes(name)
+        })
         
         if (targetPrinter) {
           this.device = targetPrinter
           return {
-            name: targetPrinter.name || 'PT210_6427',
+            name: targetPrinter.name || this.allowedPrinterNames[0],
             id: targetPrinter.id,
           }
         }
@@ -63,7 +68,8 @@ export class BluetoothPrinterService {
       // If specific printer not found, request device with filter
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          { name: 'PT210_6427' }
+          { name: this.allowedPrinterNames[0] },
+          { name: this.allowedPrinterNames[1] },
         ],
         optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'], // Common printer service UUID
       })
@@ -71,7 +77,7 @@ export class BluetoothPrinterService {
       this.device = device
 
       return {
-        name: device.name || 'PT210_6427',
+        name: device.name || this.allowedPrinterNames[0],
         id: device.id,
       }
     } catch (error) {
@@ -321,6 +327,10 @@ export class BluetoothPrinterService {
 
   isConnected(): boolean {
     return this.server?.connected || false
+  }
+
+  getSelectedPrinterName(): string | undefined {
+    return this.device?.name || undefined
   }
 }
 
