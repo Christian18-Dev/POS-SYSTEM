@@ -1,8 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Sale } from '@/contexts/SalesContext'
 import styles from './Receipt.module.css'
+import { bluetoothPrinterService, type BluetoothPrinter } from '@/lib/bluetoothPrinter'
+import { globalBluetooth } from '@/lib/globalBluetooth'
 
 interface ReceiptProps {
   sale: Sale
@@ -12,6 +14,37 @@ interface ReceiptProps {
 
 export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
+  const [isConnectingBluetooth, setIsConnectingBluetooth] = useState(false)
+  const [isPrintingBluetooth, setIsPrintingBluetooth] = useState(false)
+  const [bluetoothStatus, setBluetoothStatus] = useState<string>('')
+  const [bluetoothAvailable, setBluetoothAvailable] = useState(false)
+
+  // Check if Bluetooth is available and ensure connection
+  useEffect(() => {
+    setBluetoothAvailable(!!navigator.bluetooth)
+    
+    if (navigator.bluetooth) {
+      const ensureConnection = async () => {
+        setIsConnectingBluetooth(true)
+        try {
+          const connected = await globalBluetooth.ensureConnection()
+          if (connected) {
+            setBluetoothStatus('Bluetooth Connected')
+          } else {
+            setBluetoothStatus('PT210_6427 not found - please check printer')
+          }
+        } catch (error) {
+          setBluetoothStatus('Connection failed - please try again')
+        } finally {
+          setIsConnectingBluetooth(false)
+        }
+      }
+
+      // Try to connect immediately
+      const timer = setTimeout(ensureConnection, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [])
 
   const formatMoney = (n: number) => `₱${n.toFixed(2)}`
 
@@ -24,6 +57,70 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
       hour: '2-digit',
       minute: '2-digit',
     })
+
+  }
+    const printWithBluetooth = async () => {
+    setIsPrintingBluetooth(true)
+    setBluetoothStatus('')
+    try {
+      const subtotalForPrint = sale.subtotal || sale.total
+      const isVatExemptCustomer = sale.customerType === 'senior' || sale.customerType === 'pwd'
+      const isRegularCustomer = !isVatExemptCustomer
+
+      const vatableFallback = isRegularCustomer ? Math.round((subtotalForPrint / 1.12 + Number.EPSILON) * 100) / 100 : undefined
+      const vatableSalesForPrint =
+        isRegularCustomer
+          ? typeof sale.vatableSales === 'number' && sale.vatableSales > 0
+            ? sale.vatableSales
+            : vatableFallback
+          : undefined
+
+      const vatExemptFallback = isVatExemptCustomer ? Math.round((subtotalForPrint / 1.12 + Number.EPSILON) * 100) / 100 : undefined
+      const vatExemptSalesForPrint =
+        typeof sale.vatExemptSales === 'number' && Math.abs(sale.vatExemptSales - subtotalForPrint) > 0.01
+          ? sale.vatExemptSales
+          : vatExemptFallback
+
+      const discountFallback =
+        isVatExemptCustomer && typeof vatExemptSalesForPrint === 'number'
+          ? Math.round((vatExemptSalesForPrint * 0.2 + Number.EPSILON) * 100) / 100
+          : undefined
+      const discountAmountForPrint =
+        typeof sale.discountAmount === 'number' && sale.discountAmount > 0
+          ? sale.discountAmount
+          : discountFallback
+
+      await bluetoothPrinterService.printReceipt({
+        storeName: 'FARMACIA BETHESDA',
+        storeAddress: '243-D Kabatuhan Road, Deparo, Barangay 168, District 1, Caloocan City',
+        storePhone: '(+63) 947 406 8136',
+        logoUrl: '/Logo.png',
+        logoMaxWidthPx: 240,
+        invoiceId: sale.id,
+        date: formatDate(sale.timestamp),
+        customerName: sale.customerName || 'Walk-in',
+        paymentMethod: sale.paymentMethod,
+        items: sale.items.map(item => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        subtotal: subtotalForPrint,
+        tax: sale.vatAmount,
+        vatableSales: vatableSalesForPrint,
+        vatExemptSales: vatExemptSalesForPrint,
+        discountAmount: discountAmountForPrint,
+        discountLabel: sale.customerType === 'pwd' ? 'PWD Discount (20%):' : sale.customerType === 'senior' ? 'Senior Discount (20%):' : 'Discount:',
+        total: sale.total
+      })
+
+      setBluetoothStatus('Receipt printed successfully!')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to print receipt'
+      setBluetoothStatus(`Error: ${errorMessage}`)
+    } finally {
+      setIsPrintingBluetooth(false)
+    }
   }
 
   const getPrintableReceiptHtml = () => {
@@ -286,10 +383,18 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
     `.trim()
   }
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (onPrint) {
       onPrint()
     }
+
+        // If Bluetooth is available and connected, use Bluetooth printing
+    if (bluetoothAvailable && globalBluetooth.getConnectionStatus().isConnected) {
+      await printWithBluetooth()
+      return
+    }
+
+    // Otherwise, use regular browser printing
 
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -335,11 +440,25 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
       }
 
       w.focus()
-      w.print()
+      // Enhanced print for thermal printers
+      try {
+        w.print()
+      } catch (error) {
+        console.error('Print failed:', error)
+        // Fallback: try to open print dialog directly
+        const printWindow = w.open('', '_blank')
+        if (printWindow) {
+          printWindow.document.write(html)
+          printWindow.document.close()
+          printWindow.focus()
+          printWindow.print()
+          printWindow.close()
+        }
+      }
 
       window.setTimeout(() => {
         cleanup()
-      }, 1000)
+      }, 2000) // Increased timeout for thermal printers
     }
   }
 
@@ -438,12 +557,52 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
 
       {!hidePrintButton && (
         <div className={styles.printButtonContainer}>
-          <button onClick={handlePrint} className={styles.printButton}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 5V2.5C5 2.22386 5.22386 2 5.5 2H14.5C14.7761 2 15 2.22386 15 2.5V5M5 5H3.5C2.67157 5 2 5.67157 2 6.5V14.5C2 15.3284 2.67157 16 3.5 16H5M5 5H15M15 5H16.5C17.3284 5 18 5.67157 18 6.5V14.5C18 15.3284 17.3284 16 16.5 16H15M5 16V18.5C5 18.7761 5.22386 19 5.5 19H14.5C14.7761 19 15 18.7761 15 18.5V16M5 16H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Print Receipt
-          </button>
+          <div className={styles.printButtons}>
+            {bluetoothAvailable && !globalBluetooth.getConnectionStatus().isConnected && (
+              <button
+                onClick={() => {
+                  setIsConnectingBluetooth(true)
+                  globalBluetooth.ensureConnection().then((connected: boolean) => {
+                    setIsConnectingBluetooth(false)
+                    if (connected) {
+                      setBluetoothStatus('Bluetooth Connected')
+                    } else {
+                      setBluetoothStatus('PT210_6427 not found - please check printer')
+                    }
+                  })
+                }}
+                disabled={isConnectingBluetooth}
+                className={styles.connectButton}
+              >
+                {isConnectingBluetooth ? 'Connecting...' : 'Connect Bluetooth'}
+              </button>
+            )}
+            
+            <button 
+              onClick={handlePrint} 
+              className={styles.printButton}
+              disabled={isPrintingBluetooth}
+            >
+              {isPrintingBluetooth ? 'Printing...' : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 5V2.5C5 2.22386 5.22386 2 5.5 2H14.5C14.7761 2 15 2.22386 15 2.5V5M5 5H3.5C2.67157 5 2 5.67157 2 6.5V14.5C2 15.3284 2.67157 16 3.5 16H5M5 5H15M15 5H16.5C17.3284 5 18 5.67157 18 6.5V14.5C18 15.3284 17.3284 16 16.5 16H15M5 16V18.5C5 18.7761 5.22386 19 5.5 19H14.5C14.7761 19 15 18.7761 15 18.5V16M5 16H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {globalBluetooth.getConnectionStatus().isConnected ? 'Print via Bluetooth' : 'Print Receipt'}
+                </>
+              )}
+            </button>
+          </div>
+          
+          {/* Bluetooth status below buttons */}
+          {bluetoothAvailable && bluetoothStatus && (
+            <div className={styles.bluetoothStatusBelow}>
+              <div className={styles.connectionStatus}>
+                <span className={`${styles.statusDot} ${globalBluetooth.getConnectionStatus().isConnected ? styles.connected : styles.disconnected}`}></span>
+                <span>{bluetoothStatus}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

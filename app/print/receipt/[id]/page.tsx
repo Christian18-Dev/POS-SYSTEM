@@ -183,11 +183,170 @@ function PrintReceiptContent({ id }: { id: string }) {
     setHasPrinted(true)
 
     const t = window.setTimeout(() => {
-      window.print()
+      // Enhanced print for thermal printers
+      try {
+        window.print()
+      } catch (error) {
+        console.error('Print failed:', error)
+        // Fallback: try alternative print method
+        const printContent = document.querySelector('.receiptViewport')
+        if (printContent) {
+          const printWindow = window.open('', '_blank')
+          if (printWindow) {
+            printWindow.document.write(`
+              <!doctype html>
+              <html>
+                <head>
+                  <meta charset="utf-8" />
+                  <title>Receipt ${sale.id}</title>
+                  <style>${getPrintCss()}</style>
+                </head>
+                <body>
+                  <div class="receiptViewport">
+                    ${getReceiptHtml(sale)}
+                  </div>
+                </body>
+              </html>
+            `)
+            printWindow.document.close()
+            printWindow.focus()
+            printWindow.print()
+            printWindow.close()
+          }
+        }
+      }
     }, 250)
 
     return () => window.clearTimeout(t)
   }, [sale, hasPrinted])
+
+  const getPrintCss = () => {
+    return `
+      @page {
+        size: 58mm auto;
+        margin: 0;
+      }
+      :root { color-scheme: light; }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+      body {
+        font-family: 'Courier New', monospace;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .receiptViewport {
+        width: 58mm;
+        margin: 0 auto;
+        padding: 6mm 4mm;
+        font-size: 12px;
+        background: #ffffff;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 14px;
+        border-bottom: 2px dashed #000;
+        padding-bottom: 10px;
+      }
+      .storeLogo {
+        display: block;
+        max-width: 120px;
+        width: 100%;
+        max-height: 60px;
+        height: auto;
+        margin: 0 auto 8px;
+        object-fit: contain;
+      }
+      .storeInfo {
+        font-size: 10px;
+        color: #475569;
+        line-height: 1.35;
+      }
+      .orderInfo {
+        margin: 10px 0 12px;
+        font-size: 11px;
+      }
+      .infoRow {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+      }
+      .label {
+        font-weight: 700;
+        color: #0f172a;
+        white-space: nowrap;
+      }
+      .value {
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .items {
+        margin: 10px 0 12px;
+        border-top: 1px dashed #000;
+        border-bottom: 1px dashed #000;
+        padding: 10px 0;
+      }
+      .item {
+        margin-bottom: 10px;
+      }
+      .item:last-child {
+        margin-bottom: 0;
+      }
+      .itemHeader {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .itemName {
+        font-weight: 700;
+        color: #0f172a;
+        flex: 1;
+      }
+      .itemPrice {
+        font-weight: 700;
+        color: #0f172a;
+        white-space: nowrap;
+      }
+      .itemDetails {
+        font-size: 10px;
+        color: #475569;
+        padding-left: 8px;
+      }
+      .totals {
+        margin-top: 10px;
+      }
+      .totalRow {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 11px;
+      }
+      .totalLabel {
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .totalAmount {
+        font-weight: 900;
+        font-size: 13px;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 2px dashed #000;
+        font-size: 9px;
+        color: #475569;
+        line-height: 1.35;
+        letter-spacing: 0.2px;
+      }
+    `.trim()
+  }
 
   return (
     <div className="printPage">
@@ -482,7 +641,14 @@ function PrintReceiptContent({ id }: { id: string }) {
             <button className="btn btnSecondary" onClick={() => router.back()} type="button">
               Back
             </button>
-            <button className="btn btnPrimary" onClick={() => window.print()} type="button">
+            <button className="btn btnPrimary" onClick={() => {
+              try {
+                window.print()
+              } catch (error) {
+                console.error('Print failed:', error)
+                alert('Please check your printer connection and try again.')
+              }
+            }} type="button">
               Print
             </button>
           </div>
