@@ -278,6 +278,19 @@ export class BluetoothPrinterService {
         (typeof receiptData.vatExemptSales === 'number' && receiptData.vatExemptSales > 0) ||
         (typeof discountLabel === 'string' && (discountLabel.includes('Senior') || discountLabel.includes('PWD')))
 
+      const isDiscount20Customer =
+        (typeof discountLabel === 'string' &&
+          discountLabel.includes('Discount') &&
+          discountLabel.includes('20%') &&
+          !discountLabel.includes('Senior') &&
+          !discountLabel.includes('PWD')) ||
+        (!isVatExemptCustomer &&
+          typeof receiptData.discountAmount === 'number' &&
+          receiptData.discountAmount > 0 &&
+          (typeof receiptData.vatExemptSales !== 'number' || receiptData.vatExemptSales <= 0) &&
+          (typeof receiptData.vatableSales !== 'number' || receiptData.vatableSales <= 0) &&
+          (typeof receiptData.tax !== 'number' || receiptData.tax <= 0))
+
       if (isVatExemptCustomer) {
         const vatExemptSales =
           typeof receiptData.vatExemptSales === 'number' ? receiptData.vatExemptSales : receiptData.subtotal
@@ -285,6 +298,10 @@ export class BluetoothPrinterService {
 
         if (typeof receiptData.discountAmount === 'number' && receiptData.discountAmount > 0) {
           await this.sendText(`${discountLabel || 'Discount:'} - ${receiptData.discountAmount.toFixed(2)}\n`)
+        }
+      } else if (isDiscount20Customer) {
+        if (typeof receiptData.discountAmount === 'number' && receiptData.discountAmount > 0) {
+          await this.sendText(`${discountLabel || 'Discount (20%):'} - ${receiptData.discountAmount.toFixed(2)}\n`)
         }
       } else {
         const baseAmount = receiptData.subtotal
@@ -310,6 +327,9 @@ export class BluetoothPrinterService {
       await this.sendCommand(BluetoothPrinterService.ESC_POS.ALIGN_CENTER)
       await this.sendText('THANK YOU FOR YOUR PURCHASE\n')
       await this.sendText('THIS SERVES AS YOUR INVOICE\n')
+
+      await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
+      await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
 
       await this.sendCommand(BluetoothPrinterService.ESC_POS.CUT_PAPER)
       await this.sendCommand(BluetoothPrinterService.ESC_POS.LINE_FEED)
