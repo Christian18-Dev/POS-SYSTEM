@@ -67,7 +67,7 @@ function PrintReceiptContent({ id }: { id: string }) {
           `
             : ''}
 
-          ${typeof s.vatableSales === 'number' && s.customerType !== 'senior' && s.customerType !== 'pwd'
+          ${typeof s.vatableSales === 'number' && s.customerType === 'regular'
             ? `
           <div class="totalRow">
             <span class="totalLabel">VATable Sales:</span>
@@ -76,7 +76,7 @@ function PrintReceiptContent({ id }: { id: string }) {
           `
             : ''}
 
-          ${typeof s.vatAmount === 'number' && s.customerType !== 'senior' && s.customerType !== 'pwd'
+          ${typeof s.vatAmount === 'number' && s.customerType === 'regular'
             ? `
           <div class="totalRow">
             <span class="totalLabel">VAT (12%):</span>
@@ -97,7 +97,7 @@ function PrintReceiptContent({ id }: { id: string }) {
           ${typeof s.discountAmount === 'number' && s.discountAmount > 0
             ? `
           <div class="totalRow">
-            <span class="totalLabel">${s.customerType === 'pwd' ? 'PWD Discount (20%):' : 'Senior Discount (20%):'}</span>
+            <span class="totalLabel">${s.customerType === 'pwd' ? 'PWD Discount (20%):' : s.customerType === 'senior' ? 'Senior Discount (20%):' : 'Discount (20%):'}</span>
             <span>- ${formatMoney(s.discountAmount)}</span>
           </div>
           `

@@ -129,8 +129,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const resolvedCustomerType: 'regular' | 'senior' | 'pwd' =
-      customerType === 'senior' ? 'senior' : customerType === 'pwd' ? 'pwd' : 'regular'
+    const resolvedCustomerType: 'regular' | 'senior' | 'pwd' | 'discount20' =
+      customerType === 'senior'
+        ? 'senior'
+        : customerType === 'pwd'
+          ? 'pwd'
+          : customerType === 'discount20'
+            ? 'discount20'
+            : 'regular'
 
     // Transaction: stock updates + sale creation must succeed together
     const session = await mongoose.startSession()
@@ -301,20 +307,32 @@ export async function POST(request: NextRequest) {
       const orderId = `FBT-${dateKey}-${String(counterDoc.seq).padStart(4, '0')}`
 
       const VAT_RATE = 0.12
-      const isDiscountEligible = resolvedCustomerType === 'senior' || resolvedCustomerType === 'pwd'
-      const discountRate = isDiscountEligible ? 0.2 : 0
+      const isVatExemptCustomer = resolvedCustomerType === 'senior' || resolvedCustomerType === 'pwd'
+      const isDiscount20Customer = resolvedCustomerType === 'discount20'
+      const discountRate = isVatExemptCustomer || isDiscount20Customer ? 0.2 : 0
 
       const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
       // Assumption: item prices are VAT-inclusive.
       // Regular customer: total due equals subtotal; VAT is only for reporting/breakdown.
       // Senior/PWD: VAT-exempt + 20% discount on the VAT-exempt sales base.
+      // Discount20: 20% discount only, no VAT breakdown (used for non-VAT items).
       const vatableSales = resolvedCustomerType === 'regular' ? subtotal / (1 + VAT_RATE) : 0
       const vatAmount = resolvedCustomerType === 'regular' ? subtotal - vatableSales : 0
-      const vatExemptSales = isDiscountEligible ? subtotal / (1 + VAT_RATE) : 0
-      const discountAmount = isDiscountEligible ? vatExemptSales * discountRate : 0
 
-      const totalDue = isDiscountEligible ? vatExemptSales - discountAmount : subtotal
+      const vatExemptSales = isVatExemptCustomer ? subtotal / (1 + VAT_RATE) : 0
+
+      const discountAmount = isVatExemptCustomer
+        ? vatExemptSales * discountRate
+        : isDiscount20Customer
+          ? subtotal * discountRate
+          : 0
+
+      const totalDue = isVatExemptCustomer
+        ? vatExemptSales - discountAmount
+        : isDiscount20Customer
+          ? subtotal - discountAmount
+          : subtotal
 
       const saleTotal = round2(totalDue)
 

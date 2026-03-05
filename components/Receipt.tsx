@@ -65,7 +65,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
     try {
       const subtotalForPrint = sale.subtotal || sale.total
       const isVatExemptCustomer = sale.customerType === 'senior' || sale.customerType === 'pwd'
-      const isRegularCustomer = !isVatExemptCustomer
+      const isDiscount20Customer = sale.customerType === 'discount20'
+      const isRegularCustomer = sale.customerType === 'regular'
 
       const vatableFallback = isRegularCustomer ? Math.round((subtotalForPrint / 1.12 + Number.EPSILON) * 100) / 100 : undefined
       const vatableSalesForPrint =
@@ -81,9 +82,12 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           ? sale.vatExemptSales
           : vatExemptFallback
 
-      const discountFallback =
-        isVatExemptCustomer && typeof vatExemptSalesForPrint === 'number'
+      const discountFallback = isVatExemptCustomer
+        ? typeof vatExemptSalesForPrint === 'number'
           ? Math.round((vatExemptSalesForPrint * 0.2 + Number.EPSILON) * 100) / 100
+          : undefined
+        : isDiscount20Customer
+          ? Math.round((subtotalForPrint * 0.2 + Number.EPSILON) * 100) / 100
           : undefined
       const discountAmountForPrint =
         typeof sale.discountAmount === 'number' && sale.discountAmount > 0
@@ -110,7 +114,14 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         vatableSales: vatableSalesForPrint,
         vatExemptSales: vatExemptSalesForPrint,
         discountAmount: discountAmountForPrint,
-        discountLabel: sale.customerType === 'pwd' ? 'PWD Discount (20%):' : sale.customerType === 'senior' ? 'Senior Discount (20%):' : 'Discount:',
+        discountLabel:
+          sale.customerType === 'pwd'
+            ? 'PWD Discount (20%):'
+            : sale.customerType === 'senior'
+              ? 'Senior Discount (20%):'
+              : sale.customerType === 'discount20'
+                ? 'Discount (20%):'
+                : 'Discount:',
         total: sale.total
       })
 
@@ -157,7 +168,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           `
             : ''}
 
-          ${typeof sale.vatableSales === 'number' && sale.customerType !== 'senior' && sale.customerType !== 'pwd'
+          ${typeof sale.vatableSales === 'number' && sale.customerType === 'regular'
             ? `
           <div class="totalRow">
             <span class="totalLabel">VATable Sales:</span>
@@ -166,7 +177,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           `
             : ''}
 
-          ${typeof sale.vatAmount === 'number' && sale.customerType !== 'senior' && sale.customerType !== 'pwd'
+          ${typeof sale.vatAmount === 'number' && sale.customerType === 'regular'
             ? `
           <div class="totalRow">
             <span class="totalLabel">VAT (12%):</span>
@@ -187,7 +198,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           ${typeof sale.discountAmount === 'number' && sale.discountAmount > 0
             ? `
           <div class="totalRow">
-            <span class="totalLabel">${sale.customerType === 'pwd' ? 'PWD Discount (20%):' : 'Senior Discount (20%):'}</span>
+            <span class="totalLabel">${sale.customerType === 'pwd' ? 'PWD Discount (20%):' : sale.customerType === 'senior' ? 'Senior Discount (20%):' : 'Discount (20%):'}</span>
             <span>- ${formatMoney(sale.discountAmount)}</span>
           </div>
           `
@@ -516,14 +527,14 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
             </div>
           )}
 
-          {sale.customerType !== 'senior' && sale.customerType !== 'pwd' && typeof sale.vatableSales === 'number' && (
+          {sale.customerType === 'regular' && typeof sale.vatableSales === 'number' && (
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>VATable Sales:</span>
               <span>{formatMoney(sale.vatableSales)}</span>
             </div>
           )}
 
-          {sale.customerType !== 'senior' && sale.customerType !== 'pwd' && typeof sale.vatAmount === 'number' && (
+          {sale.customerType === 'regular' && typeof sale.vatAmount === 'number' && (
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>VAT (12%):</span>
               <span>{formatMoney(sale.vatAmount)}</span>
@@ -540,7 +551,11 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           {typeof sale.discountAmount === 'number' && sale.discountAmount > 0 && (
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>
-                {sale.customerType === 'pwd' ? 'PWD Discount (20%):' : 'Senior Discount (20%):'}
+                {sale.customerType === 'pwd'
+                  ? 'PWD Discount (20%):'
+                  : sale.customerType === 'senior'
+                    ? 'Senior Discount (20%):'
+                    : 'Discount (20%):'}
               </span>
               <span>- {formatMoney(sale.discountAmount)}</span>
             </div>

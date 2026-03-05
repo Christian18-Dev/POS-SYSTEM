@@ -61,7 +61,8 @@ export default function BluetoothPrinter({ sale, onSuccess, onError }: Bluetooth
     try {
       const subtotalForPrint = sale.subtotal || sale.total
       const isVatExemptCustomer = sale.customerType === 'senior' || sale.customerType === 'pwd'
-      const isRegularCustomer = !isVatExemptCustomer
+      const isDiscount20Customer = sale.customerType === 'discount20'
+      const isRegularCustomer = sale.customerType === 'regular'
 
       const vatableFallback = isRegularCustomer ? Math.round((subtotalForPrint / 1.12 + Number.EPSILON) * 100) / 100 : undefined
       const vatableSalesForPrint =
@@ -77,9 +78,12 @@ export default function BluetoothPrinter({ sale, onSuccess, onError }: Bluetooth
           ? sale.vatExemptSales
           : vatExemptFallback
 
-      const discountFallback =
-        isVatExemptCustomer && typeof vatExemptSalesForPrint === 'number'
+      const discountFallback = isVatExemptCustomer
+        ? typeof vatExemptSalesForPrint === 'number'
           ? Math.round((vatExemptSalesForPrint * 0.2 + Number.EPSILON) * 100) / 100
+          : undefined
+        : isDiscount20Customer
+          ? Math.round((subtotalForPrint * 0.2 + Number.EPSILON) * 100) / 100
           : undefined
       const discountAmountForPrint =
         typeof sale.discountAmount === 'number' && sale.discountAmount > 0
@@ -105,7 +109,14 @@ export default function BluetoothPrinter({ sale, onSuccess, onError }: Bluetooth
         vatableSales: vatableSalesForPrint,
         vatExemptSales: vatExemptSalesForPrint,
         discountAmount: discountAmountForPrint,
-        discountLabel: sale.customerType === 'pwd' ? 'PWD Discount (20%):' : sale.customerType === 'senior' ? 'Senior Discount (20%):' : 'Discount:',
+        discountLabel:
+          sale.customerType === 'pwd'
+            ? 'PWD Discount (20%):'
+            : sale.customerType === 'senior'
+              ? 'Senior Discount (20%):'
+              : sale.customerType === 'discount20'
+                ? 'Discount (20%):'
+                : 'Discount:',
         total: sale.total
       })
 
