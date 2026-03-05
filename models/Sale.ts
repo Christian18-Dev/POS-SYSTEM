@@ -22,6 +22,8 @@ export interface ISale extends Document {
   vatExemptSales?: number
   customerName?: string
   paymentMethod: 'cash' | 'card' | 'other'
+  cashReceived?: number
+  changeDue?: number
   status: 'completed' | 'pending' | 'cancelled'
   createdAt: Date
   updatedAt: Date
@@ -116,6 +118,14 @@ const SaleSchema: Schema = new Schema(
       type: String,
       enum: ['cash', 'card', 'other'],
       default: 'cash',
+    },
+    cashReceived: {
+      type: Number,
+      min: 0,
+    },
+    changeDue: {
+      type: Number,
+      min: 0,
     },
     status: {
       type: String,

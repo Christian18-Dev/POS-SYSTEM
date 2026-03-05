@@ -48,6 +48,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
 
   const formatMoney = (n: number) => `₱${n.toFixed(2)}`
 
+  const formatPlainNumber = (n: number) => n.toFixed(2)
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -104,6 +106,8 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
         date: formatDate(sale.timestamp),
         customerName: sale.customerName || 'Walk-in',
         paymentMethod: sale.paymentMethod,
+        cashReceived: sale.cashReceived,
+        changeDue: sale.changeDue,
         items: sale.items.map(item => ({
           name: item.product.name,
           quantity: item.quantity,
@@ -211,6 +215,24 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
           </div>
         `
 
+    const cashHtml =
+      sale.paymentMethod === 'cash' && typeof sale.cashReceived === 'number'
+        ? `
+          <div class="totalRow">
+            <span class="totalLabel">Cash:</span>
+            <span>${formatPlainNumber(sale.cashReceived)}</span>
+          </div>
+          ${typeof sale.changeDue === 'number'
+            ? `
+          <div class="totalRow">
+            <span class="totalLabel">Change:</span>
+            <span>${formatPlainNumber(sale.changeDue)}</span>
+          </div>
+          `
+            : ''}
+        `
+        : ''
+
     return `
       <div class="receipt">
         <div class="header">
@@ -250,6 +272,7 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
             <span class="totalLabel">Total:</span>
             <span class="totalAmount">${formatMoney(sale.total)}</span>
           </div>
+          ${cashHtml}
         </div>
 
         <div class="footer">THIS SERVES AS YOUR INVOICE</div>
@@ -565,6 +588,21 @@ export default function Receipt({ sale, onPrint, hidePrintButton }: ReceiptProps
             <span className={styles.totalLabel}>Total:</span>
             <span className={styles.totalAmount}>{formatMoney(sale.total)}</span>
           </div>
+
+          {sale.paymentMethod === 'cash' && typeof sale.cashReceived === 'number' && (
+            <>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Cash:</span>
+                <span>{formatPlainNumber(sale.cashReceived)}</span>
+              </div>
+              {typeof sale.changeDue === 'number' && (
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Change:</span>
+                  <span>{formatPlainNumber(sale.changeDue)}</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className={styles.footer}>THIS SERVES AS YOUR INVOICE</div>

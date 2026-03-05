@@ -40,6 +40,7 @@ function SalesContent() {
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash')
   const [customerType, setCustomerType] = useState<'regular' | 'senior' | 'pwd' | 'discount20'>('regular')
+  const [cashReceivedInput, setCashReceivedInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -142,14 +143,34 @@ function SalesContent() {
       return
     }
 
+    const cashReceivedValue = paymentMethod === 'cash'
+      ? (() => {
+          const trimmed = cashReceivedInput.trim()
+          if (!trimmed) return undefined
+          const parsed = Number(trimmed)
+          return Number.isFinite(parsed) ? parsed : undefined
+        })()
+      : undefined
+
+    if (paymentMethod === 'cash' && typeof cashReceivedValue !== 'number') {
+      toast.error('Please enter cash received')
+      return
+    }
+
+    if (paymentMethod === 'cash' && typeof cashReceivedValue === 'number' && cashReceivedValue < cartTotal) {
+      toast.error('Cash received must be greater than or equal to total')
+      return
+    }
+
     setIsProcessing(true)
     try {
-      const sale = await checkout(customerName || undefined, paymentMethod, customerType)
+      const sale = await checkout(customerName || undefined, paymentMethod, customerType, cashReceivedValue)
       setCompletedSale(sale)
       setShowReceipt(true)
       setCustomerName('')
       setPaymentMethod('cash')
       setCustomerType('regular')
+      setCashReceivedInput('')
       toast.success('Sale completed')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing sale. Please try again.'
@@ -161,6 +182,11 @@ function SalesContent() {
   }
 
   const cartTotal = getCartTotal()
+  const cashReceivedPreview = paymentMethod === 'cash' ? Number(cashReceivedInput) : NaN
+  const changePreview =
+    paymentMethod === 'cash' && Number.isFinite(cashReceivedPreview)
+      ? Math.max(0, cashReceivedPreview - cartTotal)
+      : undefined
 
   return (
     <div className={styles.sales}>
@@ -387,13 +413,40 @@ function SalesContent() {
                       <select
                         id="paymentMethod"
                         value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'card' | 'other')}
+                        onChange={(e) => {
+                          const next = e.target.value as 'cash' | 'card' | 'other'
+                          setPaymentMethod(next)
+                          if (next !== 'cash') {
+                            setCashReceivedInput('')
+                          }
+                        }}
                       >
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
                         <option value="other">Other</option>
                       </select>
                     </div>
+
+                    {paymentMethod === 'cash' && (
+                      <div className={styles.formGroup}>
+                        <label htmlFor="cashReceived">Cash Received</label>
+                        <input
+                          id="cashReceived"
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          value={cashReceivedInput}
+                          onChange={(e) => setCashReceivedInput(e.target.value)}
+                          placeholder="0"
+                        />
+                        {typeof changePreview === 'number' && (
+                          <div className={styles.changePreview}>
+                            <span className={styles.changeLabel}>Change:</span>
+                            <span className={styles.changeAmount}>₱{changePreview.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className={styles.formGroup}>
                       <label htmlFor="customerType">Customer Type</label>

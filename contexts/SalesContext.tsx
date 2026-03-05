@@ -26,6 +26,8 @@ export interface Sale {
   vatExemptSales?: number
   customerName?: string
   paymentMethod: 'cash' | 'card' | 'other'
+  cashReceived?: number
+  changeDue?: number
   timestamp: string
   status: 'completed' | 'pending' | 'cancelled'
 }
@@ -42,7 +44,8 @@ interface SalesContextType {
   checkout: (
     customerName?: string,
     paymentMethod?: 'cash' | 'card' | 'other',
-    customerType?: 'regular' | 'senior' | 'pwd' | 'discount20'
+    customerType?: 'regular' | 'senior' | 'pwd' | 'discount20',
+    cashReceived?: number
   ) => Promise<Sale>
   getSalesByDateRange: (startDate: Date, endDate: Date) => Sale[]
   getTotalSales: () => number
@@ -154,7 +157,8 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
   const checkout = async (
     customerName?: string,
     paymentMethod: 'cash' | 'card' | 'other' = 'cash',
-    customerType: 'regular' | 'senior' | 'pwd' | 'discount20' = 'regular'
+    customerType: 'regular' | 'senior' | 'pwd' | 'discount20' = 'regular',
+    cashReceived?: number
   ): Promise<Sale> => {
     if (cart.length === 0) {
       throw new Error('Cart is empty')
@@ -177,6 +181,7 @@ function SalesProviderContent({ children }: { children: ReactNode }) {
           customerName,
           paymentMethod,
           customerType,
+          cashReceived,
         }),
       })
 

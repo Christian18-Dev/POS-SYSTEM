@@ -224,6 +224,8 @@ export class BluetoothPrinterService {
     date: string
     customerName: string
     paymentMethod: string
+    cashReceived?: number
+    changeDue?: number
     items: Array<{
       name: string
       quantity: number
@@ -263,6 +265,16 @@ export class BluetoothPrinterService {
       await this.sendText(`Date: ${receiptData.date}\n`)
       await this.sendText(`Customer: ${receiptData.customerName}\n`)
       await this.sendText(`Payment: ${receiptData.paymentMethod}\n`)
+
+      if (
+        receiptData.paymentMethod?.toLowerCase?.() === 'cash' &&
+        typeof receiptData.cashReceived === 'number'
+      ) {
+        await this.sendText(`Cash: ${receiptData.cashReceived.toFixed(2)}\n`)
+        if (typeof receiptData.changeDue === 'number') {
+          await this.sendText(`Change: ${receiptData.changeDue.toFixed(2)}\n`)
+        }
+      }
 
       await this.sendText('--------------------------------\n')
       for (const item of receiptData.items) {

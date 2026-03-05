@@ -82,6 +82,8 @@ export async function GET(request: NextRequest) {
         vatExemptSales: (sale as any).vatExemptSales,
         customerName: sale.customerName || undefined,
         paymentMethod: sale.paymentMethod,
+        cashReceived: (sale as any).cashReceived,
+        changeDue: (sale as any).changeDue,
         timestamp: sale.createdAt.toISOString(),
         status: sale.status,
       })),
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
     await connectDB()
 
     const body = await request.json()
-    const { items, customerName, paymentMethod, customerType } = body
+    const { items, customerName, paymentMethod, customerType, cashReceived } = body
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -137,6 +139,9 @@ export async function POST(request: NextRequest) {
           : customerType === 'discount20'
             ? 'discount20'
             : 'regular'
+
+    const resolvedCashReceived =
+      typeof cashReceived === 'number' && Number.isFinite(cashReceived) ? cashReceived : undefined
 
     // Transaction: stock updates + sale creation must succeed together
     const session = await mongoose.startSession()
@@ -336,6 +341,11 @@ export async function POST(request: NextRequest) {
 
       const saleTotal = round2(totalDue)
 
+      const changeDue =
+        (paymentMethod || 'cash') === 'cash' && typeof resolvedCashReceived === 'number'
+          ? round2(Math.max(0, resolvedCashReceived - saleTotal))
+          : undefined
+
       const effectiveVatRate = resolvedCustomerType === 'regular' ? VAT_RATE : 0
 
       // Create sale inside the transaction
@@ -355,6 +365,8 @@ export async function POST(request: NextRequest) {
             vatExemptSales: round2(vatExemptSales),
             customerName: customerName || '',
             paymentMethod: paymentMethod || 'cash',
+            cashReceived: (paymentMethod || 'cash') === 'cash' ? resolvedCashReceived : undefined,
+            changeDue,
             status: 'completed',
           },
         ],
@@ -397,6 +409,8 @@ export async function POST(request: NextRequest) {
           vatExemptSales: sale.vatExemptSales,
           customerName: sale.customerName || undefined,
           paymentMethod: sale.paymentMethod,
+          cashReceived: (sale as any).cashReceived,
+          changeDue: (sale as any).changeDue,
           timestamp: sale.createdAt.toISOString(),
           status: sale.status,
         },

@@ -53,6 +53,8 @@ export async function GET(
         vatExemptSales: (sale as any).vatExemptSales,
         customerName: sale.customerName || undefined,
         paymentMethod: sale.paymentMethod,
+        cashReceived: (sale as any).cashReceived,
+        changeDue: (sale as any).changeDue,
         timestamp: sale.createdAt.toISOString(),
         status: sale.status,
       },

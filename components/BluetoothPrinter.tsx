@@ -99,6 +99,8 @@ export default function BluetoothPrinter({ sale, onSuccess, onError }: Bluetooth
         date: formatDate(sale.timestamp),
         customerName: sale.customerName || 'Walk-in',
         paymentMethod: sale.paymentMethod,
+        cashReceived: sale.cashReceived,
+        changeDue: sale.changeDue,
         items: sale.items.map(item => ({
           name: item.product.name,
           quantity: item.quantity,

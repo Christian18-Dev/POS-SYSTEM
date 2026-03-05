@@ -14,6 +14,7 @@
   width: 100%;
   font-family: 'Courier New', monospace;
   font-size: 12px;
+  color: #0f172a;
 }
 
 .header {
@@ -66,6 +67,7 @@
 .value {
   text-align: right;
   overflow-wrap: anywhere;
+  color: #0f172a;
 }
 
 .items {
