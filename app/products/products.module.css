@@ -918,6 +918,7 @@
 }
 
 .formGroup input,
+.formGroup select,
 .formGroup textarea {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -928,11 +929,29 @@
   transition: all 0.2s ease;
 }
 
+.formGroup select {
+  appearance: none;
+  background-color: #fff;
+  padding-right: 2.25rem;
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position: calc(100% - 1.1rem) calc(1rem + 2px), calc(100% - 0.9rem) calc(1rem + 2px);
+  background-size: 8px 8px, 8px 8px;
+  background-repeat: no-repeat;
+}
+
 .formGroup input:focus,
+.formGroup select:focus,
 .formGroup textarea:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(31, 110, 61, 0.12);
+}
+
+.formGroup select:disabled {
+  background-color: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 .formRow {

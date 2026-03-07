@@ -40,6 +40,7 @@ function ProductsContent() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [batchesModalProduct, setBatchesModalProduct] = useState<Product | null>(null)
+  const [adjustBatchId, setAdjustBatchId] = useState<string>('')
   const [expiringBatchActionId, setExpiringBatchActionId] = useState<string | null>(null)
   const [confirmExpiredBatch, setConfirmExpiredBatch] = useState<null | {
     productId: string
@@ -164,7 +165,18 @@ function ProductsContent() {
     }
     setOpenMenuProductId(null)
     setActionProduct(product)
-    setAdjustForm({ newStock: String(product.stock), note: '' })
+    const batches = Array.isArray(product.batches) ? product.batches : []
+    if (batches.length > 0) {
+      const sorted = batches
+        .slice()
+        .sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime())
+      const defaultBatch = sorted[0]
+      setAdjustBatchId(defaultBatch?.id || '')
+      setAdjustForm({ newStock: String(defaultBatch?.quantity ?? 0), note: '' })
+    } else {
+      setAdjustBatchId('')
+      setAdjustForm({ newStock: String(product.stock), note: '' })
+    }
     setActionModal('adjust')
   }
 
@@ -184,6 +196,7 @@ function ProductsContent() {
     setActionProduct(null)
     setRestockForm({ quantity: '1', manufacturingDate: '', expirationDate: '', note: '' })
     setAdjustForm({ newStock: '', note: '' })
+    setAdjustBatchId('')
   }
 
   const submitRestock = async () => {
@@ -241,10 +254,25 @@ function ProductsContent() {
 
     try {
       setIsActionSubmitting(true)
-      await apiRequest<{ success: boolean; product: Product }>(`/api/products/${actionProduct.id}/adjust`, {
-        method: 'POST',
-        body: JSON.stringify({ newStock, note: adjustForm.note }),
-      })
+      const batches = Array.isArray(actionProduct.batches) ? actionProduct.batches : []
+      if (batches.length > 0) {
+        if (!adjustBatchId) {
+          toast.error('Please select a batch')
+          return
+        }
+        await apiRequest<{ success: boolean; product: Product }>(
+          `/api/products/${actionProduct.id}/batches/${adjustBatchId}/adjust`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ newQuantity: newStock, note: adjustForm.note }),
+          }
+        )
+      } else {
+        await apiRequest<{ success: boolean; product: Product }>(`/api/products/${actionProduct.id}/adjust`, {
+          method: 'POST',
+          body: JSON.stringify({ newStock, note: adjustForm.note }),
+        })
+      }
 
       toast.success('Stock adjusted')
       closeActionModal()
@@ -843,6 +871,31 @@ function ProductsContent() {
                   void submitAdjust()
                 }}
               >
+                {Array.isArray(actionProduct.batches) && actionProduct.batches.length > 0 && (
+                  <div className={styles.formGroup}>
+                    <label htmlFor="adjust-batch">Batch *</label>
+                    <select
+                      id="adjust-batch"
+                      value={adjustBatchId}
+                      onChange={(e) => {
+                        const nextId = e.target.value
+                        setAdjustBatchId(nextId)
+                        const batch = (actionProduct.batches || []).find((b) => b.id === nextId)
+                        setAdjustForm((p) => ({ ...p, newStock: String(batch?.quantity ?? 0) }))
+                      }}
+                      disabled={isActionSubmitting}
+                    >
+                      {(actionProduct.batches || [])
+                        .slice()
+                        .sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime())
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {String(b.expirationDate).slice(0, 10)} — {b.quantity} pcs
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label htmlFor="adjust-new">New Stock *</label>
@@ -858,7 +911,15 @@ function ProductsContent() {
                   </div>
                   <div className={styles.formGroup}>
                     <label>Current</label>
-                    <input type="text" value={`${actionProduct.stock} units`} disabled />
+                    <input
+                      type="text"
+                      value={`${
+                        Array.isArray(actionProduct.batches) && actionProduct.batches.length > 0
+                          ? actionProduct.batches.find((b) => b.id === adjustBatchId)?.quantity ?? 0
+                          : actionProduct.stock
+                      } units`}
+                      disabled
+                    />
                   </div>
                 </div>
                 <div className={styles.formGroup}>
